@@ -1,0 +1,245 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ---------- Header ---------- */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s5);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.app-header .brand-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+.app-header .title {
+  font-weight: 700;
+  font-size: var(--fs-lg);
+  letter-spacing: 0.2px;
+}
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex;
+  gap: var(--s1);
+  padding: 0 var(--s4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.tab {
+  border: none;
+  background: transparent;
+  padding: var(--s3) var(--s4);
+  font-size: var(--fs-base);
+  font-weight: 500;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.tab:hover {
+  color: var(--text);
+}
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ---------- Pane ---------- */
+.pane {
+  flex: 1;
+  overflow: auto;
+  padding: var(--s5) var(--s5);
+}
+
+/* ---------- Quick Task specifics ---------- */
+.qt-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s5);
+  flex-wrap: wrap;
+  margin: var(--s4) 0;
+}
+.qt-conns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.qt-conns > span {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-weight: 500;
+}
+.qt-conns .row {
+  display: flex;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+.qt-run {
+  margin-left: auto;
+}
+
+.output {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s4);
+  max-height: 340px;
+  overflow: auto;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.cost {
+  margin-top: var(--s2);
+  font-size: var(--fs-sm);
+  color: var(--faint);
+}
+
+/* ---------- Reminders ---------- */
+.rem-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.rem-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+.rem-title {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--fs-lg);
+}
+.rem-freq {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.rem-suggestion {
+  margin-top: var(--s3);
+}
+.rem-toggle {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  padding: 0;
+}
+.rem-suggestion-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s3);
+  margin: var(--s2) 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  max-height: 260px;
+  overflow: auto;
+}
+.rem-actions {
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s4);
+  flex-wrap: wrap;
+}
+
+/* ---------- Reminder form ---------- */
+.rem-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  max-width: 680px;
+}
+.rem-form-row {
+  display: flex;
+  gap: var(--s4);
+}
+.rem-form-row > * {
+  flex: 1;
+}
+.chip-row {
+  display: flex;
+  gap: var(--s2);
+  flex-wrap: wrap;
+}
+.rem-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s2);
+}
+
+/* ---------- Inbox ---------- */
+.msg-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.msg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+.msg-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.msg-time {
+  font-size: var(--fs-sm);
+  color: var(--faint);
+}
+.msg-open {
+  font-size: var(--fs-sm);
+  color: var(--accent);
+  text-decoration: none;
+}
+.msg-snippet {
+  margin: var(--s3) 0 0;
+  color: var(--text);
+  line-height: 1.5;
+}
+.msg-draft {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s3);
+  margin: var(--s3) 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.msg-actions {
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s4);
+}
+
+/* ---------- Terminal ---------- */
+.term-pane {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.term-host {
+  flex: 1;
+  min-height: 0;
+  background: #1a1d21;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s2);
+}
