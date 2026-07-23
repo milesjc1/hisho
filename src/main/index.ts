@@ -7,6 +7,7 @@ import { createWindow, createTray, showWindow, setQuitting } from './window'
 import { startScheduler, stopScheduler } from './scheduler'
 import { startAggregator, stopAggregator } from './aggregator'
 import { killPty } from './pty'
+import { initAutoUpdate } from './updater'
 
 // Single instance: focus the existing window instead of launching a second copy.
 if (!app.requestSingleInstanceLock()) {
@@ -47,6 +48,7 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc()
     startScheduler()
     startAggregator()
+    initAutoUpdate()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()

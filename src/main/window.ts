@@ -25,7 +25,7 @@ export function createWindow(): BrowserWindow {
     minWidth: 780,
     minHeight: 560,
     show: false,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f9ecda',
     autoHideMenuBar: true,
     title: 'Hisho',
     icon: join(RESOURCES, 'app.ico'),

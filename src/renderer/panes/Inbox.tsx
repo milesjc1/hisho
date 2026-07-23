@@ -102,7 +102,7 @@ function MessageCard({
         </div>
         {m.url && (
           <a className="msg-open" href={m.url} target="_blank" rel="noreferrer">
-            Open ↗
+            Open
           </a>
         )}
       </div>

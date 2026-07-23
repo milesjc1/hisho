@@ -1,33 +1,33 @@
 /*
- * Neutral design tokens — placeholder identity for a personal tool.
- * Swap these values during the final visual polish pass.
+ * Hisho theme — warm paper/stamp palette.
+ * Core colours: destructive #c1321e · light #f9ecda · dark #2c2222 · success #52a478.
  */
 :root {
   /* surfaces */
-  --bg: #ffffff;
-  --surface: #f7f8fa;
-  --surface-2: #eef0f4;
+  --bg: #f9ecda;
+  --surface: #f3e3c8;
+  --surface-2: #ecdab9;
 
   /* text */
-  --text: #1a1d21;
-  --muted: #6b7280;
-  --faint: #9aa1ab;
+  --text: #2c2222;
+  --muted: #7a6a5f;
+  --faint: #a3907f;
 
   /* lines */
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
+  --border: #e3d3b6;
+  --border-strong: #d4bf9c;
 
-  /* accent */
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-soft: #eef2ff;
+  /* accent (stamp red) */
+  --accent: #c1321e;
+  --accent-hover: #a52918;
+  --accent-soft: #f4dccf;
   --on-accent: #ffffff;
 
   /* status */
-  --danger: #dc2626;
-  --danger-soft: #fef2f2;
-  --success: #16a34a;
-  --warn: #d97706;
+  --danger: #c1321e;
+  --danger-soft: #f4dccf;
+  --success: #52a478;
+  --warn: #c1321e;
 
   /* spacing scale */
   --s1: 4px;
@@ -51,6 +51,31 @@
   --fs-xl: 20px;
 
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+}
+
+:root[data-theme='dark'] {
+  --bg: #2c2222;
+  --surface: #372b2b;
+  --surface-2: #433434;
+
+  --text: #f9ecda;
+  --muted: #b6a596;
+  --faint: #8a7a6d;
+
+  --border: #4a3a3a;
+  --border-strong: #5c4848;
+
+  --accent: #d94a34;
+  --accent-hover: #e35d47;
+  --accent-soft: #3d2823;
+  --on-accent: #ffffff;
+
+  --danger: #d94a34;
+  --danger-soft: #3d2823;
+  --success: #52a478;
+  --warn: #d94a34;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 * {

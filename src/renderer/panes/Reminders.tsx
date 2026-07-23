@@ -214,7 +214,7 @@ function ReminderCard({
       {r.last_suggestion && (
         <div className="rem-suggestion">
           <button className="rem-toggle" onClick={() => setOpen((o) => !o)}>
-            {open ? '▾' : '▸'} Suggested action
+            {open ? 'Hide' : 'Show'} suggested action
           </button>
           {open && <pre className="rem-suggestion-body">{r.last_suggestion}</pre>}
         </div>

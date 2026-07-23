@@ -24,7 +24,7 @@ export function notifyReminder(reminder: ReminderRow, level: number): void {
 
   if (Notification.isSupported()) {
     const n = new Notification({
-      title: level >= 3 ? `⚠ ${reminder.title}` : reminder.title,
+      title: level >= 3 ? `Overdue: ${reminder.title}` : reminder.title,
       body,
       icon: ICON,
       urgency: level >= 3 ? 'critical' : 'normal'
