@@ -22,7 +22,8 @@
     "publish": {
       "provider": "github",
       "owner": "milesjc1",
-      "repo": "hisho"
+      "repo": "hisho",
+      "releaseType": "release"
     },
     "directories": {
       "output": "release",
