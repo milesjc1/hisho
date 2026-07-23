@@ -21,8 +21,8 @@
     "npmRebuild": false,
     "publish": {
       "provider": "github",
-      "owner": "miles-christensen-anglepoint",
-      "repo": "Hisho"
+      "owner": "milesjc1",
+      "repo": "hisho"
     },
     "directories": {
       "output": "release",
