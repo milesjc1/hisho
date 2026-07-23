@@ -1,6 +1,6 @@
 {
   "name": "desktop-hisho",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Personal desktop assistant wrapping Claude Code — quick tasks, nag reminders, message aggregation, terminal.",
   "main": "./out/main/index.js",
   "author": "Miles Christensen",
