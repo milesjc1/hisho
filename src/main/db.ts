@@ -6,7 +6,7 @@ import type {
   Priority,
   RecurringRule,
   RecurringRuleInput,
-  SyncedItem
+  ScannedItem
 } from '../shared/types'
 
 let db: Database.Database
@@ -32,8 +32,10 @@ function migrate(): void {
       deep_link TEXT,
       title TEXT NOT NULL,
       sender TEXT,
+      snippet TEXT,
       suggested_priority TEXT,
       suggested_resolution TEXT,
+      ignore_reason TEXT,
       priority TEXT,
       state TEXT NOT NULL DEFAULT 'new',
       remind_at INTEGER,
@@ -58,6 +60,13 @@ function migrate(): void {
       value TEXT NOT NULL
     );
   `)
+
+  // Idempotent column adds for DBs created before these fields existed.
+  const cols = new Set(
+    (db.prepare(`PRAGMA table_info(items)`).all() as { name: string }[]).map((c) => c.name)
+  )
+  if (!cols.has('snippet')) db.exec(`ALTER TABLE items ADD COLUMN snippet TEXT`)
+  if (!cols.has('ignore_reason')) db.exec(`ALTER TABLE items ADD COLUMN ignore_reason TEXT`)
 }
 
 // ---------- items: reads ----------
@@ -133,17 +142,19 @@ export function addManual(title: string): number {
   return Number(info.lastInsertRowid)
 }
 
-/** Upsert a synced item; returns true if newly inserted. */
-export function upsertSyncedItem(s: SyncedItem): boolean {
+/**
+ * Stage 1 (fetch): insert a raw scanned item awaiting classification.
+ * Dedupes on (source, ext_id) — anything already seen in ANY state is skipped,
+ * so scans stay incremental. Returns the new row id, or null if it already existed.
+ */
+export function insertScanned(s: ScannedItem): number | null {
   const now = Date.now()
   const info = db
     .prepare(
       `INSERT INTO items
-         (source, ext_id, deep_link, title, sender,
-          suggested_priority, suggested_resolution, state, created_at, last_touched_at)
+         (source, ext_id, deep_link, title, sender, snippet, state, created_at, last_touched_at)
        VALUES
-         (@source, @ext_id, @deep_link, @title, @sender,
-          @suggested_priority, @suggested_resolution, 'new', @ts, @ts)
+         (@source, @ext_id, @deep_link, @title, @sender, @snippet, 'scanned', @ts, @ts)
        ON CONFLICT(source, ext_id) DO NOTHING`
     )
     .run({
@@ -152,11 +163,55 @@ export function upsertSyncedItem(s: SyncedItem): boolean {
       deep_link: s.deep_link ?? null,
       title: s.title,
       sender: s.sender ?? null,
-      suggested_priority: s.suggested_priority ?? null,
-      suggested_resolution: s.suggested_resolution ?? null,
-      ts: s.ts ?? now
+      snippet: s.snippet ?? null,
+      ts: now
     })
-  return info.changes > 0
+  return info.changes > 0 ? Number(info.lastInsertRowid) : null
+}
+
+/** Rows fetched but not yet classified. */
+export function listScanned(): Item[] {
+  return db
+    .prepare(`SELECT * FROM items WHERE state = 'scanned' ORDER BY created_at ASC`)
+    .all() as Item[]
+}
+
+/**
+ * Stage 2 (classify): resolve a scanned row to the feed (surface) or the
+ * ignored shelf. Surface → new/untriaged with a suggested priority + next step.
+ */
+export function classifyItem(
+  id: number,
+  verdict: 'surface' | 'ignore',
+  priority: Priority | null,
+  resolution: string | null,
+  reason: string | null
+): void {
+  if (verdict === 'surface') {
+    db.prepare(
+      `UPDATE items SET state = 'new', suggested_priority = ?, suggested_resolution = ?
+       WHERE id = ? AND state = 'scanned'`
+    ).run(priority, resolution, id)
+  } else {
+    db.prepare(
+      `UPDATE items SET state = 'ignored', ignore_reason = ?
+       WHERE id = ? AND state = 'scanned'`
+    ).run(reason, id)
+  }
+}
+
+/** Classified-out items, newest first. */
+export function listIgnored(): Item[] {
+  return db
+    .prepare(`SELECT * FROM items WHERE state = 'ignored' ORDER BY created_at DESC LIMIT 300`)
+    .all() as Item[]
+}
+
+export function ignoredCount(): number {
+  const row = db.prepare(`SELECT COUNT(*) AS c FROM items WHERE state = 'ignored'`).get() as {
+    c: number
+  }
+  return row.c
 }
 
 export function acceptItem(id: number, priority: Priority): void {

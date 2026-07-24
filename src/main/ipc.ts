@@ -3,6 +3,7 @@ import {
   listFeed,
   listBackburner,
   listArchive,
+  listIgnored,
   acceptItem,
   setPriority,
   markDone,
@@ -31,6 +32,13 @@ export function registerIpc(): void {
   ipcMain.handle('items:list', () => listFeed())
   ipcMain.handle('items:backburner', () => listBackburner())
   ipcMain.handle('items:archive', () => listArchive())
+  ipcMain.handle('items:ignored', () => listIgnored())
+
+  // Promote an ignored (or archived) item back into the feed.
+  ipcMain.handle('items:promote', (_e, id: number) => {
+    resurface(id)
+    touched()
+  })
 
   ipcMain.handle('items:accept', (_e, id: number, priority: Priority) => {
     acceptItem(id, priority)

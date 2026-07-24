@@ -52,8 +52,16 @@ export type ItemSource =
   | 'manual'
   | 'recurring'
 
-/** Item lifecycle. `new` = untriaged (pinned top); `open` = accepted, in a tier. */
-export type ItemState = 'new' | 'open' | 'done' | 'dismissed'
+/**
+ * Item lifecycle.
+ *  scanned   = fetched from a source, awaiting classification (not in feed)
+ *  ignored   = classified as not needing attention (browsable, promotable)
+ *  new       = untriaged, pinned to top of feed
+ *  open      = accepted, sorted into a priority tier
+ *  done      = completed (archive)
+ *  dismissed = user-dismissed; with remind_at → backburner, without → archive
+ */
+export type ItemState = 'scanned' | 'ignored' | 'new' | 'open' | 'done' | 'dismissed'
 
 export interface Item {
   id: number
@@ -62,10 +70,14 @@ export interface Item {
   deep_link: string | null
   title: string
   sender: string | null
+  /** Short raw preview captured at fetch; feeds classification + display. */
+  snippet: string | null
   /** Priority the sync suggested; pre-selects the accept default. */
   suggested_priority: Priority | null
   /** Read-only "next step" text from the sync (display only in v1). */
   suggested_resolution: string | null
+  /** Why the classifier ignored it (shown in the Ignored view). */
+  ignore_reason: string | null
   /** Final priority; NULL while new/untriaged. */
   priority: Priority | null
   state: ItemState
@@ -77,16 +89,15 @@ export interface Item {
   last_touched_at: number
 }
 
-/** Shape a sync run returns per item (before it becomes an Item row). */
-export interface SyncedItem {
+/** Raw item the fetch stage returns, before classification. */
+export interface ScannedItem {
   source: ItemSource
   ext_id: string
   title: string
   sender?: string | null
+  snippet?: string | null
   deep_link?: string | null
-  suggested_priority?: Priority | null
-  suggested_resolution?: string | null
-  ts?: number
+  last_from_me?: boolean
 }
 
 /** Per-source counts of what a scan looked at but did not surface. */

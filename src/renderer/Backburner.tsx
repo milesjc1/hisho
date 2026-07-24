@@ -30,7 +30,7 @@ export default function Backburner(): JSX.Element {
   const hidden = items.length - visible.length
 
   return (
-    <aside className="backburner">
+    <aside className={`backburner-float ${items.length === 0 ? 'empty' : ''}`}>
       <div className="bb-head">Backburner</div>
 
       {items.length === 0 && <div className="bb-empty">Nothing parked.</div>}

@@ -5,11 +5,18 @@ import Feed from './Feed'
 import Backburner from './Backburner'
 import RecurringRules from './RecurringRules'
 import Archive from './Archive'
+import Ignored from './Ignored'
 
-type View = 'feed' | 'rules' | 'archive'
+type View = 'feed' | 'rules' | 'archive' | 'ignored'
 type Theme = 'light' | 'dark'
 
 const api = window.hisho
+
+const NAV: { id: View; label: string }[] = [
+  { id: 'feed', label: 'Feed' },
+  { id: 'rules', label: 'Recurring' },
+  { id: 'archive', label: 'Archive' }
+]
 
 export default function App(): JSX.Element {
   const [view, setView] = useState<View>('feed')
@@ -39,53 +46,56 @@ export default function App(): JSX.Element {
 
   return (
     <div className="app">
-      <Backburner />
+      <aside className="nav-sidebar">
+        <div className="brand">
+          <img className="brand-img" src={hishoLogo} alt="Hisho" />
+          <span className="brand-name">Hisho</span>
+        </div>
+
+        <nav className="nav">
+          {NAV.map((n) => (
+            <button
+              key={n.id}
+              className={`nav-item ${view === n.id ? 'active' : ''}`}
+              onClick={() => setView(n.id)}
+            >
+              {n.label}
+            </button>
+          ))}
+        </nav>
+
+        <button
+          className="theme-toggle"
+          onClick={() => setTheme((p) => (p === 'dark' ? 'light' : 'dark'))}
+        >
+          {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+        </button>
+      </aside>
 
       <main className="main">
         <header className="topbar">
-          <div className="brand">
-            <img className="brand-img" src={hishoLogo} alt="Hisho" />
-            <span className="brand-name">Hisho</span>
-          </div>
-
-          <nav className="viewnav">
-            <button className={view === 'feed' ? 'on' : ''} onClick={() => setView('feed')}>
-              Feed
-            </button>
-            <button className={view === 'rules' ? 'on' : ''} onClick={() => setView('rules')}>
-              Recurring
-            </button>
-            <button
-              className={view === 'archive' ? 'on' : ''}
-              onClick={() => setView('archive')}
-            >
-              Archive
-            </button>
-          </nav>
-
-          <div className="topbar-right">
-            {summary && (
-              <span className="sync-summary" title={`Last scan surfaced ${summary.surfaced}`}>
-                {summary.ignored} ignored last scan
-              </span>
-            )}
-            <button className="sync-btn" onClick={sync} disabled={syncing}>
-              {syncing ? 'Scanning…' : 'Scan now'}
-            </button>
-            <button
-              className="theme-toggle-sm"
-              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-              onClick={() => setTheme((p) => (p === 'dark' ? 'light' : 'dark'))}
-            >
-              {theme === 'dark' ? 'Light' : 'Dark'}
-            </button>
-          </div>
+          <button
+            className="ignored-link"
+            onClick={() => setView('ignored')}
+            title="See what the last scan ignored"
+          >
+            {summary ? `${summary.ignored} ignored last scan` : 'No scan yet'}
+          </button>
+          <button className="sync-btn" onClick={sync} disabled={syncing}>
+            {syncing ? 'Scanning…' : 'Scan now'}
+          </button>
         </header>
 
         <div className="main-content">
-          {view === 'feed' && <Feed />}
+          {view === 'feed' && (
+            <div className="feed-wrap">
+              <Backburner />
+              <Feed />
+            </div>
+          )}
           {view === 'rules' && <RecurringRules />}
           {view === 'archive' && <Archive />}
+          {view === 'ignored' && <Ignored />}
         </div>
       </main>
     </div>
