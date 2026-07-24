@@ -68,6 +68,8 @@ export interface Item {
   source: ItemSource
   ext_id: string | null
   deep_link: string | null
+  /** Native desktop-app URI (slack://, msteams:/l/…) when available; else null. */
+  app_link: string | null
   title: string
   sender: string | null
   /** Short raw preview captured at fetch; feeds classification + display. */
@@ -97,6 +99,7 @@ export interface ScannedItem {
   sender?: string | null
   snippet?: string | null
   deep_link?: string | null
+  app_link?: string | null
   last_from_me?: boolean
 }
 

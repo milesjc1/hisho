@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 import {
   listFeed,
   listBackburner,
@@ -27,7 +27,19 @@ function touched(): void {
   emitToRenderer('items:changed')
 }
 
+/** Hand a link to the OS default handler (native app / browser) — never an in-app window. */
+function openLink(url: string): void {
+  let target = url
+  // Force Teams web deep links into the desktop app.
+  if (target.startsWith('https://teams.microsoft.com/l/')) {
+    target = target.replace('https://teams.microsoft.com/l/', 'msteams:/l/')
+  }
+  void shell.openExternal(target)
+}
+
 export function registerIpc(): void {
+  ipcMain.handle('shell:open', (_e, url: string) => openLink(url))
+
   // ---------- feed / items ----------
   ipcMain.handle('items:list', () => listFeed())
   ipcMain.handle('items:backburner', () => listBackburner())

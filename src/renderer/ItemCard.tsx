@@ -10,8 +10,9 @@ export default function ItemCard({ item }: { item: Item }): JSX.Element {
   const isNew = item.state === 'new'
   const compact = !isNew && item.priority === 'low'
 
+  const link = item.app_link ?? item.deep_link
   const open = (): void => {
-    if (item.deep_link) window.open(item.deep_link, '_blank')
+    if (link) void api.openLink(link)
   }
   const accept = (p: Priority): Promise<void> => api.accept(item.id, p)
   const dismiss = (remindAt: number | null): Promise<void> => api.dismiss(item.id, remindAt)
@@ -26,7 +27,7 @@ export default function ItemCard({ item }: { item: Item }): JSX.Element {
         </span>
         <span className="row-src">{SOURCE_LABELS[item.source]}</span>
         <PriorityMenu value={item.priority} onChange={(p) => api.setPriority(item.id, p)} />
-        {item.deep_link && (
+        {link && (
           <button className="link-btn" onClick={open}>
             Open
           </button>
@@ -58,7 +59,7 @@ export default function ItemCard({ item }: { item: Item }): JSX.Element {
           )}
         </div>
         <div className="item-actions">
-          {item.deep_link && (
+          {link && (
             <button className="link-btn" onClick={open}>
               Open
             </button>

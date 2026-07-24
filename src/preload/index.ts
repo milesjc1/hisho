@@ -15,6 +15,7 @@ const api = {
   listArchive: (): Promise<Item[]> => ipcRenderer.invoke('items:archive'),
   listIgnored: (): Promise<Item[]> => ipcRenderer.invoke('items:ignored'),
   promote: (id: number): Promise<void> => ipcRenderer.invoke('items:promote', id),
+  openLink: (url: string): Promise<void> => ipcRenderer.invoke('shell:open', url),
   accept: (id: number, priority: Priority): Promise<void> =>
     ipcRenderer.invoke('items:accept', id, priority),
   setPriority: (id: number, priority: Priority): Promise<void> =>

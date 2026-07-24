@@ -30,6 +30,7 @@ function migrate(): void {
       source TEXT NOT NULL,
       ext_id TEXT,
       deep_link TEXT,
+      app_link TEXT,
       title TEXT NOT NULL,
       sender TEXT,
       snippet TEXT,
@@ -67,6 +68,7 @@ function migrate(): void {
   )
   if (!cols.has('snippet')) db.exec(`ALTER TABLE items ADD COLUMN snippet TEXT`)
   if (!cols.has('ignore_reason')) db.exec(`ALTER TABLE items ADD COLUMN ignore_reason TEXT`)
+  if (!cols.has('app_link')) db.exec(`ALTER TABLE items ADD COLUMN app_link TEXT`)
 }
 
 // ---------- items: reads ----------
@@ -152,15 +154,16 @@ export function insertScanned(s: ScannedItem): number | null {
   const info = db
     .prepare(
       `INSERT INTO items
-         (source, ext_id, deep_link, title, sender, snippet, state, created_at, last_touched_at)
+         (source, ext_id, deep_link, app_link, title, sender, snippet, state, created_at, last_touched_at)
        VALUES
-         (@source, @ext_id, @deep_link, @title, @sender, @snippet, 'scanned', @ts, @ts)
+         (@source, @ext_id, @deep_link, @app_link, @title, @sender, @snippet, 'scanned', @ts, @ts)
        ON CONFLICT(source, ext_id) DO NOTHING`
     )
     .run({
       source: s.source,
       ext_id: s.ext_id,
       deep_link: s.deep_link ?? null,
+      app_link: s.app_link ?? null,
       title: s.title,
       sender: s.sender ?? null,
       snippet: s.snippet ?? null,

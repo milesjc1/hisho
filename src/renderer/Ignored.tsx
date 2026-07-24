@@ -39,8 +39,11 @@ export default function Ignored(): JSX.Element {
               {it.ignore_reason && <div className="ign-reason">{it.ignore_reason}</div>}
             </div>
             <div className="ign-actions">
-              {it.deep_link && (
-                <button className="link-btn" onClick={() => window.open(it.deep_link!, '_blank')}>
+              {(it.app_link || it.deep_link) && (
+                <button
+                  className="link-btn"
+                  onClick={() => void api.openLink((it.app_link ?? it.deep_link)!)}
+                >
                   Open
                 </button>
               )}

@@ -85,8 +85,15 @@ Return ONLY a JSON array (no prose). Each element:
   "title": "one-line description",
   "sender": "person, or null",
   "snippet": "<=200 char preview; note if the latest message is from ME or from them",
-  "deep_link": "direct URL, or null"
+  "deep_link": "web URL to the item, or null",
+  "app_link": "native DESKTOP-APP deep link that opens the item directly in the installed app, or null"
 }
+
+For app_link, build the desktop-app URI whenever you have the ids:
+- Slack: "slack://channel?team=<TEAM_ID>&id=<CHANNEL_OR_DM_ID>&message=<MESSAGE_TS>" (only if you know team+channel+ts)
+- Teams:  "msteams:/l/message/<CHANNEL_ID>/<MESSAGE_ID>?..."  (the msteams: deep link)
+- Outlook: usually no reliable desktop URI — set app_link to null and give the OWA web link as deep_link
+- Linear / others: set app_link to null (the web deep_link opens in the browser, which is correct)
 Return [] if nothing is new. Do not send, modify, or resolve anything.`
 
 async function fetchStage(sinceIso: string): Promise<number> {
@@ -109,7 +116,8 @@ async function fetchStage(sinceIso: string): Promise<number> {
       title: String(m.title),
       sender: m.sender ? String(m.sender) : null,
       snippet: m.snippet ? String(m.snippet) : null,
-      deep_link: m.deep_link ? String(m.deep_link) : null
+      deep_link: m.deep_link ? String(m.deep_link) : null,
+      app_link: m.app_link ? String(m.app_link) : null
     }
     if (insertScanned(item) != null) inserted++
   }
