@@ -1,99 +1,82 @@
 import { ipcMain } from 'electron'
-import { runClaude } from './claude-runner'
 import {
-  createTask,
-  finishTask,
-  listTasks,
-  listReminders,
-  createReminder,
-  updateReminder,
-  deleteReminder,
-  markReminderDone
+  listFeed,
+  listBackburner,
+  listArchive,
+  acceptItem,
+  setPriority,
+  markDone,
+  dismissItem,
+  addManual,
+  resurface,
+  untriagedCount,
+  listRules,
+  createRule,
+  updateRule,
+  deleteRule
 } from './db'
-import { reloadJobs, runReminderNow } from './scheduler'
-import { poll, draftReply } from './aggregator'
-import {
-  listMessages,
-  markMessageSeen,
-  markMessageResponded,
-  unreadMessageCount
-} from './db'
-import { setBadgeCount } from './window'
-import { startPty, writePty, resizePty, killPty } from './pty'
-import type { RunRequest, RunResult, ReminderInput } from '../shared/types'
+import { runSync, lastSummary } from './sync'
+import { tick as recurringTick } from './recurring'
+import { emitToRenderer, setBadgeCount } from './window'
+import type { Priority, RecurringRuleInput } from '../shared/types'
+
+/** After any mutation: refresh the badge and tell the renderer to reload. */
+function touched(): void {
+  setBadgeCount(untriagedCount())
+  emitToRenderer('items:changed')
+}
 
 export function registerIpc(): void {
-  // ---------- Quick Task ----------
-  ipcMain.handle('task:list', () => listTasks())
+  // ---------- feed / items ----------
+  ipcMain.handle('items:list', () => listFeed())
+  ipcMain.handle('items:backburner', () => listBackburner())
+  ipcMain.handle('items:archive', () => listArchive())
 
-  ipcMain.handle(
-    'task:run',
-    async (event, req: RunRequest): Promise<RunResult & { taskId: number }> => {
-      const taskId = createTask(req.prompt, req.model, req.connections)
-      const web = event.sender
-      const result = await runClaude(req, {
-        onText: (chunk) => {
-          if (!web.isDestroyed()) web.send('task:text', { taskId, chunk })
-        },
-        onSession: (sessionId) => {
-          if (!web.isDestroyed()) web.send('task:session', { taskId, sessionId })
-        }
-      })
-      finishTask(taskId, result)
-      return { ...result, taskId }
-    }
-  )
+  ipcMain.handle('items:accept', (_e, id: number, priority: Priority) => {
+    acceptItem(id, priority)
+    touched()
+  })
 
-  // ---------- Reminders ----------
-  ipcMain.handle('reminder:list', () => listReminders())
+  ipcMain.handle('items:setPriority', (_e, id: number, priority: Priority) => {
+    setPriority(id, priority)
+    touched()
+  })
 
-  ipcMain.handle('reminder:create', (_e, input: ReminderInput) => {
-    const id = createReminder(input)
-    reloadJobs()
+  ipcMain.handle('items:done', (_e, id: number) => {
+    markDone(id)
+    touched()
+  })
+
+  ipcMain.handle('items:dismiss', (_e, id: number, remindAt: number | null) => {
+    dismissItem(id, remindAt)
+    touched()
+  })
+
+  ipcMain.handle('items:addManual', (_e, title: string) => {
+    const id = addManual(title)
+    touched()
     return id
   })
 
-  ipcMain.handle('reminder:update', (_e, id: number, input: ReminderInput) => {
-    updateReminder(id, input)
-    reloadJobs()
+  ipcMain.handle('items:restore', (_e, id: number) => {
+    resurface(id)
+    touched()
   })
 
-  ipcMain.handle('reminder:delete', (_e, id: number) => {
-    deleteReminder(id)
-    reloadJobs()
+  ipcMain.handle('items:sync', () => runSync())
+  ipcMain.handle('sync:summary', () => lastSummary())
+
+  // ---------- recurring rules ----------
+  ipcMain.handle('rules:list', () => listRules())
+  ipcMain.handle('rules:create', (_e, input: RecurringRuleInput) => {
+    const id = createRule(input)
+    recurringTick() // spawn immediately if it's already inside its lead window
+    return id
   })
-
-  ipcMain.handle('reminder:markDone', (_e, id: number, done: boolean) => {
-    markReminderDone(id, done)
-    reloadJobs()
+  ipcMain.handle('rules:update', (_e, id: number, input: RecurringRuleInput) => {
+    updateRule(id, input)
   })
-
-  ipcMain.handle('reminder:runNow', (_e, id: number) => {
-    runReminderNow(id)
+  ipcMain.handle('rules:delete', (_e, id: number) => {
+    deleteRule(id)
   })
-
-  // ---------- Inbox / messages ----------
-  ipcMain.handle('message:list', () => listMessages())
-  ipcMain.handle('message:refresh', () => poll())
-  ipcMain.handle('message:draft', (_e, id: number) => draftReply(id))
-
-  ipcMain.handle('message:markSeen', (_e, id: number) => {
-    markMessageSeen(id)
-    setBadgeCount(unreadMessageCount())
-  })
-
-  ipcMain.handle('message:markResponded', (_e, id: number) => {
-    markMessageResponded(id)
-    setBadgeCount(unreadMessageCount())
-  })
-
-  // ---------- Terminal (pty) ----------
-  ipcMain.on('pty:start', (_e, size: { cols: number; rows: number }) =>
-    startPty(size.cols, size.rows)
-  )
-  ipcMain.on('pty:input', (_e, data: string) => writePty(data))
-  ipcMain.on('pty:resize', (_e, size: { cols: number; rows: number }) =>
-    resizePty(size.cols, size.rows)
-  )
-  ipcMain.on('pty:kill', () => killPty())
 }

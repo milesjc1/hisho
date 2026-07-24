@@ -1,12 +1,12 @@
-import { app, BrowserWindow, dialog } from 'electron'
+import { app, BrowserWindow, dialog, globalShortcut } from 'electron'
 import { writeFileSync } from 'fs'
 import { join } from 'path'
 import { initDb } from './db'
 import { registerIpc } from './ipc'
-import { createWindow, createTray, showWindow, setQuitting } from './window'
-import { startScheduler, stopScheduler } from './scheduler'
-import { startAggregator, stopAggregator } from './aggregator'
-import { killPty } from './pty'
+import { createWindow, createTray, showWindow, setQuitting, focusCapture } from './window'
+import { startSync, stopSync } from './sync'
+import { startRecurring, stopRecurring } from './recurring'
+import { startBackburner, stopBackburner } from './backburner'
 import { initAutoUpdate } from './updater'
 
 // Single instance: focus the existing window instead of launching a second copy.
@@ -46,9 +46,13 @@ if (!app.requestSingleInstanceLock()) {
       app.quit()
     })
     registerIpc()
-    startScheduler()
-    startAggregator()
+    startSync()
+    startRecurring()
+    startBackburner()
     initAutoUpdate()
+
+    // Global hotkey for instant manual capture — beat the sticky note.
+    globalShortcut.register('CommandOrControl+Shift+Space', () => focusCapture())
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -60,8 +64,10 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on('before-quit', () => {
     setQuitting(true)
-    stopScheduler()
-    stopAggregator()
-    killPty()
+    stopSync()
+    stopRecurring()
+    stopBackburner()
   })
+
+  app.on('will-quit', () => globalShortcut.unregisterAll())
 }

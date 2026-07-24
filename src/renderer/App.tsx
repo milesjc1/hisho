@@ -1,68 +1,92 @@
 import { useEffect, useState } from 'react'
 import hishoLogo from './assets/hisho.png'
-import QuickTask from './panes/QuickTask'
-import Reminders from './panes/Reminders'
-import Inbox from './panes/Inbox'
-import Terminal from './panes/Terminal'
+import type { SyncSummary } from '../shared/types'
+import Feed from './Feed'
+import Backburner from './Backburner'
+import RecurringRules from './RecurringRules'
+import Archive from './Archive'
 
-type TabId = 'task' | 'reminders' | 'inbox' | 'terminal'
+type View = 'feed' | 'rules' | 'archive'
 type Theme = 'light' | 'dark'
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'task', label: 'Quick Task' },
-  { id: 'reminders', label: 'Reminders' },
-  { id: 'inbox', label: 'Inbox' },
-  { id: 'terminal', label: 'Terminal' }
-]
+const api = window.hisho
 
 export default function App(): JSX.Element {
-  const [tab, setTab] = useState<TabId>('task')
+  const [view, setView] = useState<View>('feed')
+  const [syncing, setSyncing] = useState(false)
+  const [summary, setSummary] = useState<SyncSummary | null>(null)
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem('hisho-theme') as Theme) || 'light'
   )
-
-  // Main process can pull us to a tab (e.g. clicking a reminder toast).
-  useEffect(() => window.hisho.onNavigate((t) => setTab(t)), [])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     localStorage.setItem('hisho-theme', theme)
   }, [theme])
 
+  useEffect(() => {
+    void api.syncSummary().then(setSummary)
+    return api.onItemsChanged(() => void api.syncSummary().then(setSummary))
+  }, [])
+
+  const sync = (): void => {
+    setSyncing(true)
+    void api.sync().finally(() => {
+      setSyncing(false)
+      void api.syncSummary().then(setSummary)
+    })
+  }
+
   return (
     <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <img className="brand-img" src={hishoLogo} alt="Hisho" />
-          <span className="brand-name">Hisho</span>
-        </div>
+      <Backburner />
 
-        <nav className="nav">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              className={`nav-item ${tab === t.id ? 'active' : ''}`}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
+      <main className="main">
+        <header className="topbar">
+          <div className="brand">
+            <img className="brand-img" src={hishoLogo} alt="Hisho" />
+            <span className="brand-name">Hisho</span>
+          </div>
+
+          <nav className="viewnav">
+            <button className={view === 'feed' ? 'on' : ''} onClick={() => setView('feed')}>
+              Feed
             </button>
-          ))}
-        </nav>
+            <button className={view === 'rules' ? 'on' : ''} onClick={() => setView('rules')}>
+              Recurring
+            </button>
+            <button
+              className={view === 'archive' ? 'on' : ''}
+              onClick={() => setView('archive')}
+            >
+              Archive
+            </button>
+          </nav>
 
-        <button
-          className="theme-toggle"
-          onClick={() => setTheme((p) => (p === 'dark' ? 'light' : 'dark'))}
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-        </button>
-      </aside>
+          <div className="topbar-right">
+            {summary && (
+              <span className="sync-summary" title={`Last scan surfaced ${summary.surfaced}`}>
+                {summary.ignored} ignored last scan
+              </span>
+            )}
+            <button className="sync-btn" onClick={sync} disabled={syncing}>
+              {syncing ? 'Scanning…' : 'Scan now'}
+            </button>
+            <button
+              className="theme-toggle-sm"
+              title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              onClick={() => setTheme((p) => (p === 'dark' ? 'light' : 'dark'))}
+            >
+              {theme === 'dark' ? 'Light' : 'Dark'}
+            </button>
+          </div>
+        </header>
 
-      <main className="content">
-        {tab === 'task' && <QuickTask />}
-        {tab === 'reminders' && <Reminders />}
-        {tab === 'inbox' && <Inbox />}
-        {tab === 'terminal' && <Terminal />}
+        <div className="main-content">
+          {view === 'feed' && <Feed />}
+          {view === 'rules' && <RecurringRules />}
+          {view === 'archive' && <Archive />}
+        </div>
       </main>
     </div>
   )

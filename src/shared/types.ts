@@ -12,7 +12,7 @@ export const CONNECTION_LABELS: Record<Connection, string> = {
   github: 'GitHub'
 }
 
-/** Model choices surfaced in the UI. Values are passed straight to `claude --model`. */
+/** Model choices. Values are passed straight to `claude --model`. */
 export type ModelAlias = 'opus' | 'sonnet' | 'haiku'
 
 export const MODEL_LABELS: Record<ModelAlias, string> = {
@@ -25,7 +25,7 @@ export interface RunRequest {
   prompt: string
   model: ModelAlias
   connections: Connection[]
-  /** Resume a prior session (for multi-call reminder workflows). */
+  /** Resume a prior session. */
   resumeSessionId?: string
 }
 
@@ -37,41 +37,85 @@ export interface RunResult {
   error?: string
 }
 
-export interface TaskRow {
+// ---------- Focus App feed model ----------
+
+export type Priority = 'high' | 'med' | 'low'
+
+/** Where a feed item came from. */
+export type ItemSource =
+  | 'slack'
+  | 'teams'
+  | 'outlook'
+  | 'sharepoint'
+  | 'github'
+  | 'linear'
+  | 'manual'
+  | 'recurring'
+
+/** Item lifecycle. `new` = untriaged (pinned top); `open` = accepted, in a tier. */
+export type ItemState = 'new' | 'open' | 'done' | 'dismissed'
+
+export interface Item {
   id: number
-  prompt: string
-  model: string
-  connections: string // json array
-  result: string
-  status: 'pending' | 'running' | 'done' | 'error'
+  source: ItemSource
+  ext_id: string | null
+  deep_link: string | null
+  title: string
+  sender: string | null
+  /** Priority the sync suggested; pre-selects the accept default. */
+  suggested_priority: Priority | null
+  /** Read-only "next step" text from the sync (display only in v1). */
+  suggested_resolution: string | null
+  /** Final priority; NULL while new/untriaged. */
+  priority: Priority | null
+  state: ItemState
+  /** Resurface timestamp (ms); set only while backburnered. */
+  remind_at: number | null
+  recurring_rule_id: number | null
   created_at: number
+  /** Resets on user interaction; drives oldest-untouched sort within a tier. */
+  last_touched_at: number
 }
 
-export interface ReminderRow {
-  id: number
+/** Shape a sync run returns per item (before it becomes an Item row). */
+export interface SyncedItem {
+  source: ItemSource
+  ext_id: string
   title: string
-  prompt: string
-  model: string
-  connections: string // json array
-  cron: string // node-cron expression
-  last_run: number | null
-  next_due: number | null
-  escalation_level: number
-  done: number // 0 | 1
-  last_suggestion: string | null
-  session_id: string | null
-  created_at: number
+  sender?: string | null
+  deep_link?: string | null
+  suggested_priority?: Priority | null
+  suggested_resolution?: string | null
+  ts?: number
 }
 
-export interface ReminderInput {
+/** Per-source counts of what a scan looked at but did not surface. */
+export interface SyncSummary {
+  at: number
+  found: number
+  surfaced: number
+  ignored: number
+  perSource: Record<string, { surfaced: number; ignored: number }>
+}
+
+export interface RecurringRule {
+  id: number
   title: string
-  prompt: string
-  model: ModelAlias
-  connections: Connection[]
   cron: string
+  lead_days: number
+  default_priority: Priority
+  last_spawned_at: number | null
+  created_at: number
 }
 
-/** Friendly frequency presets mapped to cron expressions. */
+export interface RecurringRuleInput {
+  title: string
+  cron: string
+  lead_days: number
+  default_priority: Priority
+}
+
+/** Friendly frequency presets mapped to cron expressions (recurring rules). */
 export interface FrequencyPreset {
   id: string
   label: string
@@ -79,23 +123,14 @@ export interface FrequencyPreset {
 }
 
 export const FREQUENCY_PRESETS: FrequencyPreset[] = [
-  { id: 'minutely', label: 'Every minute (testing)', cron: '* * * * *' },
-  { id: 'hourly', label: 'Hourly', cron: '0 * * * *' },
   { id: 'daily', label: 'Daily at 9am', cron: '0 9 * * *' },
-  { id: 'weekdays', label: 'Weekdays at 9am', cron: '0 9 * * 1-5' },
   { id: 'weekly', label: 'Weekly (Mon 9am)', cron: '0 9 * * 1' },
   { id: 'monthly', label: 'Monthly (1st, 9am)', cron: '0 9 1 * *' },
-  { id: 'quarterly', label: 'Quarterly (9am, 1st of Jan/Apr/Jul/Oct)', cron: '0 9 1 1,4,7,10 *' }
+  { id: 'quarterly', label: 'Quarterly (1st of Jan/Apr/Jul/Oct)', cron: '0 9 1 1,4,7,10 *' }
 ]
 
-export interface MessageRow {
-  id: number
-  source: string
-  ext_id: string
-  sender: string
-  snippet: string
-  url: string | null
-  seen: number
-  responded: number
-  ts: number
+export const PRIORITY_LABELS: Record<Priority, string> = {
+  high: 'High',
+  med: 'Medium',
+  low: 'Low'
 }

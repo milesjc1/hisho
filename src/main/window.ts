@@ -66,20 +66,20 @@ export function showWindow(): void {
   mainWindow?.focus()
 }
 
-/** Yank the window to the front — used by the escalation ladder at level 3+. */
-export function forceWindowOpen(): void {
+/**
+ * Gentle surface: bring the window to the front when new items arrive.
+ * No always-on-top flash — quiet, pull-not-push (spec §10).
+ */
+export function showAndFocus(): void {
   if (!mainWindow) createWindow()
   mainWindow?.show()
-  mainWindow?.setAlwaysOnTop(true)
   mainWindow?.focus()
-  mainWindow?.flashFrame(true)
-  setTimeout(() => mainWindow?.setAlwaysOnTop(false), 1500)
 }
 
-/** Ask the renderer to switch to a tab. */
-export function navigateTo(tab: 'task' | 'reminders' | 'inbox' | 'terminal'): void {
-  showWindow()
-  mainWindow?.webContents.send('nav:go', tab)
+/** Ask the renderer to focus the manual-capture bar (global hotkey). */
+export function focusCapture(): void {
+  showAndFocus()
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('capture:focus')
 }
 
 /** Push an event to the renderer (e.g. reminders changed → refresh). */
@@ -89,9 +89,12 @@ export function emitToRenderer(channel: string, payload?: unknown): void {
 
 export function setBadgeCount(count: number): void {
   if (!tray) return
-  tray.setToolTip(count > 0 ? `Hisho — ${count} unread` : 'Hisho')
+  tray.setToolTip(count > 0 ? `Hisho — ${count} to triage` : 'Hisho')
   if (!mainWindow) return
-  mainWindow.setOverlayIcon(count > 0 ? makeBadgeIcon(count) : null, count > 0 ? `${count} unread` : '')
+  mainWindow.setOverlayIcon(
+    count > 0 ? makeBadgeIcon(count) : null,
+    count > 0 ? `${count} to triage` : ''
+  )
 }
 
 function makeBadgeIcon(count: number): Electron.NativeImage {

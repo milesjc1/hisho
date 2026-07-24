@@ -2,11 +2,11 @@ import Database from 'better-sqlite3'
 import { app } from 'electron'
 import { join } from 'path'
 import type {
-  TaskRow,
-  ReminderRow,
-  ReminderInput,
-  MessageRow,
-  RunResult
+  Item,
+  Priority,
+  RecurringRule,
+  RecurringRuleInput,
+  SyncedItem
 } from '../shared/types'
 
 let db: Database.Database
@@ -19,44 +19,38 @@ export function initDb(): void {
 }
 
 function migrate(): void {
+  // Fresh start: the old tasks/reminders/messages model is gone.
   db.exec(`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      prompt TEXT NOT NULL,
-      model TEXT NOT NULL,
-      connections TEXT NOT NULL DEFAULT '[]',
-      result TEXT NOT NULL DEFAULT '',
-      status TEXT NOT NULL DEFAULT 'pending',
-      created_at INTEGER NOT NULL
-    );
+    DROP TABLE IF EXISTS tasks;
+    DROP TABLE IF EXISTS reminders;
+    DROP TABLE IF EXISTS messages;
 
-    CREATE TABLE IF NOT EXISTS reminders (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL,
-      prompt TEXT NOT NULL,
-      model TEXT NOT NULL,
-      connections TEXT NOT NULL DEFAULT '[]',
-      cron TEXT NOT NULL,
-      last_run INTEGER,
-      next_due INTEGER,
-      escalation_level INTEGER NOT NULL DEFAULT 0,
-      done INTEGER NOT NULL DEFAULT 0,
-      last_suggestion TEXT,
-      session_id TEXT,
-      created_at INTEGER NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS messages (
+    CREATE TABLE IF NOT EXISTS items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       source TEXT NOT NULL,
-      ext_id TEXT NOT NULL,
-      sender TEXT NOT NULL DEFAULT '',
-      snippet TEXT NOT NULL DEFAULT '',
-      url TEXT,
-      seen INTEGER NOT NULL DEFAULT 0,
-      responded INTEGER NOT NULL DEFAULT 0,
-      ts INTEGER NOT NULL,
+      ext_id TEXT,
+      deep_link TEXT,
+      title TEXT NOT NULL,
+      sender TEXT,
+      suggested_priority TEXT,
+      suggested_resolution TEXT,
+      priority TEXT,
+      state TEXT NOT NULL DEFAULT 'new',
+      remind_at INTEGER,
+      recurring_rule_id INTEGER,
+      created_at INTEGER NOT NULL,
+      last_touched_at INTEGER NOT NULL,
       UNIQUE(source, ext_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS recurring_rules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      cron TEXT NOT NULL,
+      lead_days INTEGER NOT NULL DEFAULT 5,
+      default_priority TEXT NOT NULL DEFAULT 'med',
+      last_spawned_at INTEGER,
+      created_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS settings (
@@ -66,175 +60,200 @@ function migrate(): void {
   `)
 }
 
-// ---------- tasks ----------
+// ---------- items: reads ----------
 
-export function createTask(prompt: string, model: string, connections: string[]): number {
-  const info = db
-    .prepare(
-      `INSERT INTO tasks (prompt, model, connections, status, created_at)
-       VALUES (?, ?, ?, 'running', ?)`
-    )
-    .run(prompt, model, JSON.stringify(connections), Date.now())
-  return Number(info.lastInsertRowid)
-}
-
-export function finishTask(id: number, result: RunResult): void {
-  db.prepare(`UPDATE tasks SET result = ?, status = ? WHERE id = ?`).run(
-    result.ok ? result.text : (result.error ?? 'error'),
-    result.ok ? 'done' : 'error',
-    id
-  )
-}
-
-export function listTasks(limit = 50): TaskRow[] {
-  return db
-    .prepare(`SELECT * FROM tasks ORDER BY created_at DESC LIMIT ?`)
-    .all(limit) as TaskRow[]
-}
-
-// ---------- reminders ----------
-
-export function createReminder(input: ReminderInput): number {
-  const info = db
-    .prepare(
-      `INSERT INTO reminders (title, prompt, model, connections, cron, created_at)
-       VALUES (@title, @prompt, @model, @connections, @cron, @created_at)`
-    )
-    .run({
-      title: input.title,
-      prompt: input.prompt,
-      model: input.model,
-      connections: JSON.stringify(input.connections),
-      cron: input.cron,
-      created_at: Date.now()
-    })
-  return Number(info.lastInsertRowid)
-}
-
-export function listReminders(): ReminderRow[] {
-  return db.prepare(`SELECT * FROM reminders ORDER BY created_at DESC`).all() as ReminderRow[]
-}
-
-export function getReminder(id: number): ReminderRow | undefined {
-  return db.prepare(`SELECT * FROM reminders WHERE id = ?`).get(id) as ReminderRow | undefined
-}
-
-export function updateReminder(id: number, input: ReminderInput): void {
-  db.prepare(
-    `UPDATE reminders SET title=@title, prompt=@prompt, model=@model,
-     connections=@connections, cron=@cron WHERE id=@id`
-  ).run({
-    id,
-    title: input.title,
-    prompt: input.prompt,
-    model: input.model,
-    connections: JSON.stringify(input.connections),
-    cron: input.cron
-  })
-}
-
-export function deleteReminder(id: number): void {
-  db.prepare(`DELETE FROM reminders WHERE id = ?`).run(id)
-}
-
-/** Called after a scheduled run: store suggestion, bump escalation, set timing. */
-export function recordReminderRun(
-  id: number,
-  suggestion: string,
-  sessionId: string | undefined,
-  nextDue: number | null
-): number {
-  db.prepare(
-    `UPDATE reminders
-     SET last_run = ?, last_suggestion = ?, session_id = ?,
-         escalation_level = escalation_level + 1, next_due = ?
-     WHERE id = ?`
-  ).run(Date.now(), suggestion, sessionId ?? null, nextDue, id)
-  return getReminder(id)!.escalation_level
-}
-
-export function setReminderNextDue(id: number, nextDue: number | null): void {
-  db.prepare(`UPDATE reminders SET next_due = ? WHERE id = ?`).run(nextDue, id)
-}
-
-/** A new cron occurrence arrived: activate the reminder for action. */
-export function armReminder(id: number, nextDue: number): void {
-  db.prepare(
-    `UPDATE reminders SET done = 0, escalation_level = 0, next_due = ? WHERE id = ?`
-  ).run(nextDue, id)
-}
-
-/** Escalate an already-fired, still-unfinished reminder (no LLM re-run). */
-export function escalateReminder(id: number, nextDue: number): number {
-  db.prepare(
-    `UPDATE reminders SET escalation_level = escalation_level + 1, next_due = ? WHERE id = ?`
-  ).run(nextDue, id)
-  return getReminder(id)!.escalation_level
-}
-
-/** User marked done → stop nagging, reset escalation. */
-export function markReminderDone(id: number, done: boolean): void {
-  db.prepare(`UPDATE reminders SET done = ?, escalation_level = 0 WHERE id = ?`).run(
-    done ? 1 : 0,
-    id
-  )
-}
-
-export function dueReminders(now: number): ReminderRow[] {
+/** Feed = new (pinned top) then open, high→med→low, oldest-untouched first. */
+export function listFeed(): Item[] {
   return db
     .prepare(
-      `SELECT * FROM reminders WHERE done = 0 AND next_due IS NOT NULL AND next_due <= ?`
+      `SELECT * FROM items
+       WHERE state IN ('new','open')
+       ORDER BY
+         CASE state WHEN 'new' THEN 0 ELSE 1 END,
+         CASE priority WHEN 'high' THEN 0 WHEN 'med' THEN 1 WHEN 'low' THEN 2 ELSE 3 END,
+         last_touched_at ASC`
     )
-    .all(now) as ReminderRow[]
+    .all() as Item[]
 }
 
-// ---------- messages ----------
-
-/** Upsert a polled message; returns true if it was newly inserted. */
-export function upsertMessage(
-  m: Omit<MessageRow, 'id' | 'seen' | 'responded'>
-): boolean {
-  const info = db
-    .prepare(
-      `INSERT INTO messages (source, ext_id, sender, snippet, url, ts)
-       VALUES (@source, @ext_id, @sender, @snippet, @url, @ts)
-       ON CONFLICT(source, ext_id) DO NOTHING`
-    )
-    .run({
-      source: m.source,
-      ext_id: m.ext_id,
-      sender: m.sender,
-      snippet: m.snippet,
-      url: m.url ?? null,
-      ts: m.ts
-    })
-  return info.changes > 0
-}
-
-export function getMessage(id: number): MessageRow | undefined {
-  return db.prepare(`SELECT * FROM messages WHERE id = ?`).get(id) as MessageRow | undefined
-}
-
-export function listMessages(includeResponded = false): MessageRow[] {
-  const where = includeResponded ? '' : 'WHERE responded = 0'
+/** Parked items with a live resurface timer, soonest first. */
+export function listBackburner(): Item[] {
   return db
-    .prepare(`SELECT * FROM messages ${where} ORDER BY ts DESC LIMIT 200`)
-    .all() as MessageRow[]
+    .prepare(
+      `SELECT * FROM items
+       WHERE state = 'dismissed' AND remind_at IS NOT NULL
+       ORDER BY remind_at ASC`
+    )
+    .all() as Item[]
 }
 
-export function unreadMessageCount(): number {
-  const row = db.prepare(`SELECT COUNT(*) as c FROM messages WHERE seen = 0`).get() as {
+/** Completed + ignored (dismissed with no timer), most recent first. */
+export function listArchive(): Item[] {
+  return db
+    .prepare(
+      `SELECT * FROM items
+       WHERE state = 'done' OR (state = 'dismissed' AND remind_at IS NULL)
+       ORDER BY last_touched_at DESC LIMIT 200`
+    )
+    .all() as Item[]
+}
+
+export function getItem(id: number): Item | undefined {
+  return db.prepare(`SELECT * FROM items WHERE id = ?`).get(id) as Item | undefined
+}
+
+/** Count of untriaged items — drives the quiet tray badge. */
+export function untriagedCount(): number {
+  const row = db.prepare(`SELECT COUNT(*) AS c FROM items WHERE state = 'new'`).get() as {
     c: number
   }
   return row.c
 }
 
-export function markMessageSeen(id: number): void {
-  db.prepare(`UPDATE messages SET seen = 1 WHERE id = ?`).run(id)
+/** Items whose resurface time has arrived. */
+export function dueBackburner(now: number): Item[] {
+  return db
+    .prepare(
+      `SELECT * FROM items
+       WHERE state = 'dismissed' AND remind_at IS NOT NULL AND remind_at <= ?`
+    )
+    .all(now) as Item[]
 }
 
-export function markMessageResponded(id: number): void {
-  db.prepare(`UPDATE messages SET responded = 1, seen = 1 WHERE id = ?`).run(id)
+// ---------- items: writes ----------
+
+export function addManual(title: string): number {
+  const now = Date.now()
+  const info = db
+    .prepare(
+      `INSERT INTO items (source, title, state, created_at, last_touched_at)
+       VALUES ('manual', ?, 'new', ?, ?)`
+    )
+    .run(title, now, now)
+  return Number(info.lastInsertRowid)
+}
+
+/** Upsert a synced item; returns true if newly inserted. */
+export function upsertSyncedItem(s: SyncedItem): boolean {
+  const now = Date.now()
+  const info = db
+    .prepare(
+      `INSERT INTO items
+         (source, ext_id, deep_link, title, sender,
+          suggested_priority, suggested_resolution, state, created_at, last_touched_at)
+       VALUES
+         (@source, @ext_id, @deep_link, @title, @sender,
+          @suggested_priority, @suggested_resolution, 'new', @ts, @ts)
+       ON CONFLICT(source, ext_id) DO NOTHING`
+    )
+    .run({
+      source: s.source,
+      ext_id: s.ext_id,
+      deep_link: s.deep_link ?? null,
+      title: s.title,
+      sender: s.sender ?? null,
+      suggested_priority: s.suggested_priority ?? null,
+      suggested_resolution: s.suggested_resolution ?? null,
+      ts: s.ts ?? now
+    })
+  return info.changes > 0
+}
+
+export function acceptItem(id: number, priority: Priority): void {
+  db.prepare(
+    `UPDATE items SET state = 'open', priority = ?, last_touched_at = ? WHERE id = ?`
+  ).run(priority, Date.now(), id)
+}
+
+export function setPriority(id: number, priority: Priority): void {
+  db.prepare(`UPDATE items SET priority = ?, last_touched_at = ? WHERE id = ?`).run(
+    priority,
+    Date.now(),
+    id
+  )
+}
+
+export function markDone(id: number): void {
+  db.prepare(
+    `UPDATE items SET state = 'done', remind_at = NULL, last_touched_at = ? WHERE id = ?`
+  ).run(Date.now(), id)
+}
+
+/** Dismiss: with a timer → backburner; null → ignore (recoverable from archive). */
+export function dismissItem(id: number, remindAt: number | null): void {
+  db.prepare(
+    `UPDATE items SET state = 'dismissed', remind_at = ?, last_touched_at = ? WHERE id = ?`
+  ).run(remindAt, Date.now(), id)
+}
+
+/**
+ * Return an item to the feed. If it never had a priority it comes back as new
+ * (re-triage); if it was accepted before, it returns to its prior tier.
+ * Used by both the backburner timer and manual restore from archive.
+ */
+export function resurface(id: number): void {
+  const it = getItem(id)
+  if (!it) return
+  const state = it.priority ? 'open' : 'new'
+  db.prepare(`UPDATE items SET state = ?, remind_at = NULL WHERE id = ?`).run(state, id)
+}
+
+// ---------- recurring rules ----------
+
+export function listRules(): RecurringRule[] {
+  return db
+    .prepare(`SELECT * FROM recurring_rules ORDER BY created_at DESC`)
+    .all() as RecurringRule[]
+}
+
+export function createRule(input: RecurringRuleInput): number {
+  const info = db
+    .prepare(
+      `INSERT INTO recurring_rules (title, cron, lead_days, default_priority, created_at)
+       VALUES (@title, @cron, @lead_days, @default_priority, @created_at)`
+    )
+    .run({ ...input, created_at: Date.now() })
+  return Number(info.lastInsertRowid)
+}
+
+export function updateRule(id: number, input: RecurringRuleInput): void {
+  db.prepare(
+    `UPDATE recurring_rules
+     SET title=@title, cron=@cron, lead_days=@lead_days, default_priority=@default_priority
+     WHERE id=@id`
+  ).run({ ...input, id })
+}
+
+export function deleteRule(id: number): void {
+  db.prepare(`DELETE FROM recurring_rules WHERE id = ?`).run(id)
+}
+
+export function markRuleSpawned(id: number, at: number): void {
+  db.prepare(`UPDATE recurring_rules SET last_spawned_at = ? WHERE id = ?`).run(at, id)
+}
+
+/**
+ * Spawn a feed item for a recurring occurrence. `dueTs` makes the ext_id unique
+ * per occurrence, so restarts never double-spawn the same one.
+ */
+export function spawnRecurringItem(rule: RecurringRule, dueTs: number): boolean {
+  const now = Date.now()
+  const info = db
+    .prepare(
+      `INSERT INTO items
+         (source, ext_id, title, suggested_priority, state, recurring_rule_id,
+          created_at, last_touched_at)
+       VALUES ('recurring', @ext_id, @title, @priority, 'new', @rule_id, @ts, @ts)
+       ON CONFLICT(source, ext_id) DO NOTHING`
+    )
+    .run({
+      ext_id: `rule-${rule.id}-${dueTs}`,
+      title: rule.title,
+      priority: rule.default_priority,
+      rule_id: rule.id,
+      ts: now
+    })
+  return info.changes > 0
 }
 
 // ---------- settings ----------
