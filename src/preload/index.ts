@@ -1,51 +1,26 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron'
-import type {
-  Item,
-  Priority,
-  RecurringRule,
-  RecurringRuleInput,
-  SyncSummary
-} from '../shared/types'
+import { contextBridge, ipcRenderer } from 'electron'
+import type { Item, ItemState } from '../shared/types'
 
 // Typed, allowlisted bridge. Renderer never touches ipcRenderer directly.
 const api = {
-  // ---- feed / items ----
-  listFeed: (): Promise<Item[]> => ipcRenderer.invoke('items:list'),
-  listBackburner: (): Promise<Item[]> => ipcRenderer.invoke('items:backburner'),
-  listArchive: (): Promise<Item[]> => ipcRenderer.invoke('items:archive'),
-  listIgnored: (): Promise<Item[]> => ipcRenderer.invoke('items:ignored'),
-  promote: (id: number): Promise<void> => ipcRenderer.invoke('items:promote', id),
+  center: (): Promise<Item[]> => ipcRenderer.invoke('board:center'),
+  backburner: (): Promise<Item[]> => ipcRenderer.invoke('board:backburner'),
+  responded: (): Promise<Item[]> => ipcRenderer.invoke('board:responded'),
+  done: (): Promise<Item[]> => ipcRenderer.invoke('board:done'),
+  dismissed: (): Promise<Item[]> => ipcRenderer.invoke('board:dismissed'),
+  setState: (id: number, state: ItemState): Promise<void> =>
+    ipcRenderer.invoke('item:setState', id, state),
+  addManual: (title: string): Promise<number> => ipcRenderer.invoke('item:addManual', title),
+  restore: (id: number): Promise<void> => ipcRenderer.invoke('item:restore', id),
   openLink: (url: string): Promise<void> => ipcRenderer.invoke('shell:open', url),
-  accept: (id: number, priority: Priority): Promise<void> =>
-    ipcRenderer.invoke('items:accept', id, priority),
-  setPriority: (id: number, priority: Priority): Promise<void> =>
-    ipcRenderer.invoke('items:setPriority', id, priority),
-  done: (id: number): Promise<void> => ipcRenderer.invoke('items:done', id),
-  dismiss: (id: number, remindAt: number | null): Promise<void> =>
-    ipcRenderer.invoke('items:dismiss', id, remindAt),
-  addManual: (title: string): Promise<number> => ipcRenderer.invoke('items:addManual', title),
-  restore: (id: number): Promise<void> => ipcRenderer.invoke('items:restore', id),
-  sync: (): Promise<{ found: number; new: number }> => ipcRenderer.invoke('items:sync'),
-  syncSummary: (): Promise<SyncSummary | null> => ipcRenderer.invoke('sync:summary'),
+  pull: (days: number): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke('pull:run', days),
+  getSetting: (k: string): Promise<string | null> => ipcRenderer.invoke('settings:get', k),
+  setSetting: (k: string, v: string): Promise<void> => ipcRenderer.invoke('settings:set', k, v),
   onItemsChanged: (cb: () => void): (() => void) => {
     const h = (): void => cb()
     ipcRenderer.on('items:changed', h)
     return () => ipcRenderer.removeListener('items:changed', h)
-  },
-
-  // ---- recurring rules ----
-  listRules: (): Promise<RecurringRule[]> => ipcRenderer.invoke('rules:list'),
-  createRule: (input: RecurringRuleInput): Promise<number> =>
-    ipcRenderer.invoke('rules:create', input),
-  updateRule: (id: number, input: RecurringRuleInput): Promise<void> =>
-    ipcRenderer.invoke('rules:update', id, input),
-  deleteRule: (id: number): Promise<void> => ipcRenderer.invoke('rules:delete', id),
-
-  // ---- capture-bar focus (main → renderer, from the global hotkey) ----
-  onFocusCapture: (cb: () => void): (() => void) => {
-    const h = (): void => cb()
-    ipcRenderer.on('capture:focus', h)
-    return () => ipcRenderer.removeListener('capture:focus', h)
   }
 }
 
