@@ -247,6 +247,13 @@
 .mini.d {
   color: var(--green);
 }
+.mini.x {
+  color: var(--muted);
+}
+.mini.x:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
 
 /* ---------- Add manual ---------- */
 

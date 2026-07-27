@@ -50,11 +50,16 @@ export default function ItemCard({ item, showSort, staleDays }: Props): JSX.Elem
           <button className="mini r" onClick={() => void api.setState(item.id, 'responded')}>
             Responded →
           </button>
-          <button className="mini d" onClick={() => void api.setState(item.id, 'done')}>
-            ✓ Done
-          </button>
         </div>
       )}
+      <div className="sortbtns">
+        <button className="mini d" onClick={() => void api.setState(item.id, 'done')}>
+          ✓ Done
+        </button>
+        <button className="mini x" onClick={() => void api.setState(item.id, 'dismissed')}>
+          ✕ Ignore
+        </button>
+      </div>
     </div>
   )
 }
