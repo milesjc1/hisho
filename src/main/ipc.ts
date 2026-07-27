@@ -1,29 +1,24 @@
 import { ipcMain, shell } from 'electron'
 import {
-  listFeed,
+  listCenter,
   listBackburner,
-  listArchive,
-  listIgnored,
-  acceptItem,
-  setPriority,
-  markDone,
-  dismissItem,
+  listResponded,
+  listDone,
+  listDismissed,
+  setState,
   addManual,
-  resurface,
-  untriagedCount,
-  listRules,
-  createRule,
-  updateRule,
-  deleteRule
+  restore,
+  newCount,
+  getSetting,
+  setSetting
 } from './db'
-import { runSync, lastSummary } from './sync'
-import { tick as recurringTick } from './recurring'
+import { runPull } from './sync'
 import { emitToRenderer, setBadgeCount } from './window'
-import type { Priority, RecurringRuleInput } from '../shared/types'
+import type { ItemState } from '../shared/types'
 
 /** After any mutation: refresh the badge and tell the renderer to reload. */
 function touched(): void {
-  setBadgeCount(untriagedCount())
+  setBadgeCount(newCount())
   emitToRenderer('items:changed')
 }
 
@@ -40,63 +35,30 @@ function openLink(url: string): void {
 export function registerIpc(): void {
   ipcMain.handle('shell:open', (_e, url: string) => openLink(url))
 
-  // ---------- feed / items ----------
-  ipcMain.handle('items:list', () => listFeed())
-  ipcMain.handle('items:backburner', () => listBackburner())
-  ipcMain.handle('items:archive', () => listArchive())
-  ipcMain.handle('items:ignored', () => listIgnored())
+  // ---------- board reads ----------
+  ipcMain.handle('board:center', () => listCenter())
+  ipcMain.handle('board:backburner', () => listBackburner())
+  ipcMain.handle('board:responded', () => listResponded())
+  ipcMain.handle('board:done', () => listDone())
+  ipcMain.handle('board:dismissed', () => listDismissed())
 
-  // Promote an ignored (or archived) item back into the feed.
-  ipcMain.handle('items:promote', (_e, id: number) => {
-    resurface(id)
+  // ---------- item writes ----------
+  ipcMain.handle('item:setState', (_e, id: number, state: ItemState) => {
+    setState(id, state)
     touched()
   })
-
-  ipcMain.handle('items:accept', (_e, id: number, priority: Priority) => {
-    acceptItem(id, priority)
-    touched()
-  })
-
-  ipcMain.handle('items:setPriority', (_e, id: number, priority: Priority) => {
-    setPriority(id, priority)
-    touched()
-  })
-
-  ipcMain.handle('items:done', (_e, id: number) => {
-    markDone(id)
-    touched()
-  })
-
-  ipcMain.handle('items:dismiss', (_e, id: number, remindAt: number | null) => {
-    dismissItem(id, remindAt)
-    touched()
-  })
-
-  ipcMain.handle('items:addManual', (_e, title: string) => {
+  ipcMain.handle('item:addManual', (_e, title: string) => {
     const id = addManual(title)
     touched()
     return id
   })
-
-  ipcMain.handle('items:restore', (_e, id: number) => {
-    resurface(id)
+  ipcMain.handle('item:restore', (_e, id: number) => {
+    restore(id)
     touched()
   })
 
-  ipcMain.handle('items:sync', () => runSync())
-  ipcMain.handle('sync:summary', () => lastSummary())
-
-  // ---------- recurring rules ----------
-  ipcMain.handle('rules:list', () => listRules())
-  ipcMain.handle('rules:create', (_e, input: RecurringRuleInput) => {
-    const id = createRule(input)
-    recurringTick() // spawn immediately if it's already inside its lead window
-    return id
-  })
-  ipcMain.handle('rules:update', (_e, id: number, input: RecurringRuleInput) => {
-    updateRule(id, input)
-  })
-  ipcMain.handle('rules:delete', (_e, id: number) => {
-    deleteRule(id)
-  })
+  // ---------- scan + settings ----------
+  ipcMain.handle('pull:run', (_e, days: number) => runPull(days))
+  ipcMain.handle('settings:get', (_e, key: string) => getSetting(key) ?? null)
+  ipcMain.handle('settings:set', (_e, key: string, value: string) => setSetting(key, value))
 }
