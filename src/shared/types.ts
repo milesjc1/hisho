@@ -52,65 +52,39 @@ export type ItemSource =
   | 'manual'
   | 'recurring'
 
-/**
- * Item lifecycle.
- *  scanned   = fetched from a source, awaiting classification (not in feed)
- *  ignored   = classified as not needing attention (browsable, promotable)
- *  new       = untriaged, pinned to top of feed
- *  open      = accepted, sorted into a priority tier
- *  done      = completed (archive)
- *  dismissed = user-dismissed; with remind_at → backburner, without → archive
- */
-export type ItemState = 'scanned' | 'ignored' | 'new' | 'open' | 'done' | 'dismissed'
+export type ItemState = 'new' | 'active' | 'backburner' | 'responded' | 'done' | 'dismissed'
 
 export interface Item {
   id: number
   source: ItemSource
   ext_id: string | null
+  kind: string | null
   deep_link: string | null
-  /** Native desktop-app URI (slack://, msteams:/l/…) when available; else null. */
   app_link: string | null
   title: string
   sender: string | null
-  /** Short raw preview captured at fetch; feeds classification + display. */
   snippet: string | null
-  /** Priority the sync suggested; pre-selects the accept default. */
-  suggested_priority: Priority | null
-  /** Read-only "next step" text from the sync (display only in v1). */
-  suggested_resolution: string | null
-  /** Why the classifier ignored it (shown in the Ignored view). */
-  ignore_reason: string | null
-  /** Final priority; NULL while new/untriaged. */
-  priority: Priority | null
   state: ItemState
-  /** Resurface timestamp (ms); set only while backburnered. */
-  remind_at: number | null
-  recurring_rule_id: number | null
+  status_reason: string | null
+  responded_at: number | null
   created_at: number
-  /** Resets on user interaction; drives oldest-untouched sort within a tier. */
   last_touched_at: number
 }
 
-/** Raw item the fetch stage returns, before classification. */
-export interface ScannedItem {
+/** Item the scanner/CLI ingests (pre-insert). */
+export interface IngestItem {
   source: ItemSource
-  ext_id: string
+  external_id: string
+  kind?: string | null
   title: string
   sender?: string | null
   snippet?: string | null
   deep_link?: string | null
   app_link?: string | null
-  last_from_me?: boolean
 }
 
-/** Per-source counts of what a scan looked at but did not surface. */
-export interface SyncSummary {
-  at: number
-  found: number
-  surfaced: number
-  ignored: number
-  perSource: Record<string, { surfaced: number; ignored: number }>
-}
+/** {source, external_id, reason} — skill triage dismiss payload. */
+export interface DismissEntry { source: ItemSource; external_id: string; reason: string }
 
 export interface RecurringRule {
   id: number
