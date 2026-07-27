@@ -1,81 +1,50 @@
-/*
- * Hisho theme — warm paper/stamp palette.
- * Core colours: destructive #c1321e · light #f9ecda · dark #2c2222 · success #52a478.
- */
-:root {
-  /* surfaces */
-  --bg: #f9ecda;
-  --surface: #f3e3c8;
-  --surface-2: #ecdab9;
+/* ayu-dark theme + TT Norms Pro */
 
-  /* text */
-  --text: #2c2222;
-  --muted: #7a6a5f;
-  --faint: #a3907f;
-
-  /* lines */
-  --border: #e3d3b6;
-  --border-strong: #d4bf9c;
-
-  /* accent (stamp red) */
-  --accent: #c1321e;
-  --accent-hover: #a52918;
-  --accent-soft: #f4dccf;
-  --on-accent: #ffffff;
-
-  /* status */
-  --danger: #c1321e;
-  --danger-soft: #f4dccf;
-  --success: #52a478;
-  --warn: #c1321e;
-
-  /* spacing scale */
-  --s1: 4px;
-  --s2: 8px;
-  --s3: 12px;
-  --s4: 16px;
-  --s5: 24px;
-  --s6: 32px;
-
-  /* radii */
-  --radius-sm: 6px;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --radius-pill: 999px;
-
-  /* type */
-  --font: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --fs-sm: 12px;
-  --fs-base: 14px;
-  --fs-lg: 16px;
-  --fs-xl: 20px;
-
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+@font-face {
+  font-family: 'TT Norms Pro';
+  src: url('/fonts/TTNormsPro-Normal.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TT Norms Pro';
+  src: url('/fonts/TTNormsPro-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TT Norms Pro';
+  src: url('/fonts/TTNormsPro-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TT Norms Pro';
+  src: url('/fonts/TTNormsPro-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
 }
 
-:root[data-theme='dark'] {
-  --bg: #2c2222;
-  --surface: #372b2b;
-  --surface-2: #433434;
-
-  --text: #f9ecda;
-  --muted: #b6a596;
-  --faint: #8a7a6d;
-
-  --border: #4a3a3a;
-  --border-strong: #5c4848;
-
-  --accent: #d94a34;
-  --accent-hover: #e35d47;
-  --accent-soft: #3d2823;
-  --on-accent: #ffffff;
-
-  --danger: #d94a34;
-  --danger-soft: #3d2823;
-  --success: #52a478;
-  --warn: #d94a34;
-
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+:root {
+  --bg: #0b0e14;
+  --panel: #0f131a;
+  --col: #11161f;
+  --center: #0e1420;
+  --line: #1e232b;
+  --fg: #bfbdb6;
+  --muted: #686868;
+  --white: #fff;
+  --blue: #59c2ff;
+  --green: #aad94c;
+  --yellow: #ffb454;
+  --red: #f07178;
+  --cyan: #95e6cb;
+  --magenta: #d2a6ff;
+  --font: 'TT Norms Pro', -apple-system, 'Segoe UI', sans-serif;
 }
 
 * {
@@ -91,15 +60,15 @@ body,
 
 body {
   font-family: var(--font);
-  color: var(--text);
   background: var(--bg);
-  font-size: var(--fs-base);
+  color: var(--fg);
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
 
-button,
 input,
-textarea,
-select {
+select,
+button,
+textarea {
   font-family: inherit;
 }

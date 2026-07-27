@@ -1,83 +1,60 @@
-import { useState } from 'react'
-import type { Item, Priority } from '../shared/types'
-import { itemMeta, SOURCE_LABELS } from './lib'
-import { TriageMenu, TimerMenu, PriorityMenu } from './menus'
+import type { DragEvent } from 'react'
+import type { Item } from '../shared/types'
+import { SOURCE_BADGE, SOURCE_LABELS, waitingDays } from './lib'
 
 const api = window.hisho
 
-export default function ItemCard({ item }: { item: Item }): JSX.Element {
-  const [showRes, setShowRes] = useState(false)
+interface Props {
+  item: Item
+  showSort?: boolean
+  staleDays?: number
+}
+
+export default function ItemCard({ item, showSort, staleDays }: Props): JSX.Element {
   const isNew = item.state === 'new'
-  const compact = !isNew && item.priority === 'low'
-
   const link = item.app_link ?? item.deep_link
-  const open = (): void => {
-    if (link) void api.openLink(link)
-  }
-  const accept = (p: Priority): Promise<void> => api.accept(item.id, p)
-  const dismiss = (remindAt: number | null): Promise<void> => api.dismiss(item.id, remindAt)
+  const badgeClass = SOURCE_BADGE[item.source] ?? ''
 
-  // Low-priority accepted items are a glanceable one-line checklist.
-  if (compact) {
-    return (
-      <div className="row-item">
-        <button className="done-circle" title="Done" onClick={() => api.done(item.id)} />
-        <span className="row-title" title={item.title}>
-          {item.title}
-        </span>
-        <span className="row-src">{SOURCE_LABELS[item.source]}</span>
-        <PriorityMenu value={item.priority} onChange={(p) => api.setPriority(item.id, p)} />
-        {link && (
-          <button className="link-btn" onClick={open}>
-            Open
-          </button>
-        )}
-        <TimerMenu onDismiss={dismiss} />
-      </div>
-    )
+  const metaParts = [item.sender, item.snippet].filter(Boolean) as string[]
+
+  const days = item.state === 'responded' ? waitingDays(item.responded_at) : null
+  const stale = staleDays != null && days != null && days >= staleDays
+
+  const onDragStart = (e: DragEvent<HTMLDivElement>): void => {
+    e.dataTransfer.setData('text/plain', String(item.id))
   }
 
   return (
-    <div className={`item-card ${isNew ? 'is-new' : ''} p-${item.priority ?? 'new'}`}>
-      <div className="item-main">
-        {!isNew && (
-          <button className="done-circle" title="Done" onClick={() => api.done(item.id)} />
-        )}
-        <div className="item-body">
-          <div className="item-title" title={item.title}>
-            {isNew && <span className="new-dot">NEW</span>}
-            {item.title}
-          </div>
-          <div className="item-meta">{itemMeta(item)}</div>
-          {item.suggested_resolution && (
-            <button className="res-toggle" onClick={() => setShowRes(!showRes)}>
-              {showRes ? 'Hide suggested next step' : 'Suggested next step'}
-            </button>
-          )}
-          {showRes && item.suggested_resolution && (
-            <div className="res-body">{item.suggested_resolution}</div>
-          )}
-        </div>
-        <div className="item-actions">
-          {link && (
-            <button className="link-btn" onClick={open}>
-              Open
-            </button>
-          )}
-          {isNew ? (
-            <TriageMenu
-              suggested={item.suggested_priority}
-              onAccept={accept}
-              onDismiss={dismiss}
-            />
-          ) : (
-            <>
-              <PriorityMenu value={item.priority} onChange={(p) => api.setPriority(item.id, p)} />
-              <TimerMenu onDismiss={dismiss} />
-            </>
-          )}
-        </div>
+    <div className={`card ${isNew ? 'is-new' : ''}`} draggable onDragStart={onDragStart}>
+      {link && (
+        <button className="open-btn" onClick={() => void api.openLink(link)}>
+          Open
+        </button>
+      )}
+      <div className="title">
+        {isNew && <span className="new-dot">NEW</span>}
+        {item.title}
       </div>
+      <div className="meta">
+        <span className={`badge ${badgeClass}`}>{SOURCE_LABELS[item.source]}</span>
+        {metaParts.length > 0 && <span>{metaParts.join(' · ')}</span>}
+        {days != null && (
+          <span className={`waiting ${stale ? 'stale' : ''}`}>waiting {days}d</span>
+        )}
+      </div>
+      {showSort && (
+        <div className="sortbtns">
+          <button className="mini l" onClick={() => void api.setState(item.id, 'backburner')}>
+            ← Backburner
+          </button>
+          <button className="mini r" onClick={() => void api.setState(item.id, 'responded')}>
+            Responded →
+          </button>
+          <button className="mini d" onClick={() => void api.setState(item.id, 'done')}>
+            ✓ Done
+          </button>
+        </div>
+      )}
     </div>
   )
 }
