@@ -9,6 +9,8 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "start": "electron-vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "rebuild": "electron-rebuild -f --only better-sqlite3",
     "dist": "electron-vite build && electron-builder --win",
     "release": "electron-vite build && electron-builder --win --publish always",
@@ -72,6 +74,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "typescript": "^5.7.2",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
   }
 }
