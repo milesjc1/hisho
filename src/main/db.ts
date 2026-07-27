@@ -67,7 +67,7 @@ export function listBackburner(): Item[] {
   return db.prepare(`SELECT * FROM items WHERE state='backburner' ORDER BY last_touched_at ASC`).all() as Item[]
 }
 export function listResponded(): Item[] {
-  return db.prepare(`SELECT * FROM items WHERE state='responded' ORDER BY responded_at ASC`).all() as Item[]
+  return db.prepare(`SELECT * FROM items WHERE state='responded' AND responded_at IS NOT NULL ORDER BY responded_at ASC`).all() as Item[]
 }
 export function listDone(): Item[] {
   return db.prepare(`SELECT * FROM items WHERE state='done' ORDER BY last_touched_at DESC LIMIT 300`).all() as Item[]

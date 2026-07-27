@@ -4,8 +4,9 @@ import { join } from 'path'
 import { rmSync, mkdtempSync } from 'fs'
 import Database from 'better-sqlite3'
 
+// Tests share one db module instance re-pointed per test, so they must run
+// sequentially (default single-fork pool) — the module-level `db` is not thread-safe.
 let dir: string
-let dbMod: Awaited<ReturnType<typeof import('./db')['initDbAt']>> | undefined
 beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'hisho-')); process.env.PLATE_DB = join(dir, 'h.db') })
 afterEach(async () => {
   // Close before deleting — required on Windows (WAL files stay locked otherwise)
