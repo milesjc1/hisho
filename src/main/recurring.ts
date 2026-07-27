@@ -1,5 +1,5 @@
 import parser from 'cron-parser'
-import { listRules, spawnRecurringItem, markRuleSpawned, untriagedCount } from './db'
+import { listRules, spawnRecurringItem, markRuleSpawned, newCount } from './db'
 import { emitToRenderer, setBadgeCount, showAndFocus } from './window'
 import { notify } from './notify'
 
@@ -42,7 +42,7 @@ export function tick(): void {
   }
 
   if (spawned > 0) {
-    setBadgeCount(untriagedCount())
+    setBadgeCount(newCount())
     emitToRenderer('items:changed')
     notify(
       `${spawned} recurring task${spawned > 1 ? 's' : ''} due soon`,

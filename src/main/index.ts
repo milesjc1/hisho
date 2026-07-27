@@ -4,9 +4,9 @@ import { join } from 'path'
 import { initDb } from './db'
 import { registerIpc } from './ipc'
 import { createWindow, createTray, showWindow, setQuitting, focusCapture } from './window'
-import { startSync, stopSync } from './sync'
 import { startRecurring, stopRecurring } from './recurring'
-import { startBackburner, stopBackburner } from './backburner'
+import { startNag, stopNag } from './nag'
+import { startStale, stopStale } from './stale'
 import { initAutoUpdate } from './updater'
 
 // Single instance: focus the existing window instead of launching a second copy.
@@ -33,6 +33,7 @@ if (!app.requestSingleInstanceLock()) {
   function boot(): void {
     // Stable identity so Windows groups the window/shortcut under one taskbar icon.
     app.setAppUserModelId('com.mileschristensen.hisho')
+    app.setName('Hisho')
 
     // Launch on login, hidden to the tray (only in packaged builds).
     if (app.isPackaged) {
@@ -46,9 +47,9 @@ if (!app.requestSingleInstanceLock()) {
       app.quit()
     })
     registerIpc()
-    startSync()
     startRecurring()
-    startBackburner()
+    startNag()
+    startStale()
     initAutoUpdate()
 
     // Global hotkey for instant manual capture — beat the sticky note.
@@ -64,9 +65,9 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on('before-quit', () => {
     setQuitting(true)
-    stopSync()
     stopRecurring()
-    stopBackburner()
+    stopNag()
+    stopStale()
   })
 
   app.on('will-quit', () => globalShortcut.unregisterAll())
