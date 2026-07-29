@@ -5,6 +5,24 @@ import ItemCard from './ItemCard'
 
 const api = window.hisho
 
+const IconBackburner = (): JSX.Element => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="21 8 21 21 3 21 3 8" />
+    <rect x="1" y="3" width="22" height="5" />
+    <line x1="10" y1="12" x2="14" y2="12" />
+  </svg>
+)
+const IconActive = (): JSX.Element => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+)
+const IconResponded = (): JSX.Element => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+)
+
 export default function Board(): JSX.Element {
   const [center, setCenter] = useState<Item[]>([])
   const [back, setBack] = useState<Item[]>([])
@@ -32,28 +50,37 @@ export default function Board(): JSX.Element {
 
   return (
     <div className="board">
-      <Panel title="Backburner" count={back.length} state="backburner">
-        {back.length === 0 && <div className="panel-empty">Nothing parked.</div>}
+      <Panel title="Backburner" count={back.length} state="backburner" icon={<IconBackburner />}>
+        {back.length === 0 && <div className="panel-empty">Nothing parked</div>}
         {back.map((i) => (
-          <ItemCard key={i.id} item={i} />
+          <ItemCard key={i.id} item={i} variant="backburner" />
         ))}
       </Panel>
 
-      <Panel title="Active" count={center.length} state="active" className="center">
+      <Panel title="Active" count={center.length} state="active" icon={<IconActive />} accent>
+        {newItems.length > 0 && (
+          <div className="section-label">
+            Needs triage
+            <span className="triage-dot" />
+          </div>
+        )}
         {newItems.map((i) => (
-          <ItemCard key={i.id} item={i} showSort />
+          <ItemCard key={i.id} item={i} variant="triage" />
         ))}
+
         {newItems.length > 0 && activeItems.length > 0 && <hr className="divider" />}
+        {activeItems.length > 0 && <div className="section-label">In Progress</div>}
         {activeItems.map((i) => (
-          <ItemCard key={i.id} item={i} />
+          <ItemCard key={i.id} item={i} variant="active" />
         ))}
-        {center.length === 0 && <div className="panel-empty">All clear.</div>}
+
+        {center.length === 0 && <div className="panel-empty">All clear</div>}
       </Panel>
 
-      <Panel title="Responded" count={resp.length} state="responded">
-        {resp.length === 0 && <div className="panel-empty">Nothing awaiting a reply.</div>}
+      <Panel title="Responded" count={resp.length} state="responded" icon={<IconResponded />}>
+        {resp.length === 0 && <div className="panel-empty">Nothing pending</div>}
         {resp.map((i) => (
-          <ItemCard key={i.id} item={i} staleDays={staleDays} />
+          <ItemCard key={i.id} item={i} variant="responded" staleDays={staleDays} />
         ))}
       </Panel>
     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ZOOM_FACTORS, type FontScale } from '../shared/types'
 
 const api = window.hisho
 
@@ -22,8 +23,17 @@ const SPECS: SettingSpec[] = [
     type: 'select',
     options: ['opus', 'sonnet', 'haiku']
   },
-  { key: 'scanDays', label: 'Scan window (days)', default: '7', type: 'number' }
+  { key: 'scanDays', label: 'Scan window (days)', default: '7', type: 'number' },
+  {
+    key: 'fontScale',
+    label: 'Text size',
+    default: 'm',
+    type: 'select',
+    options: ['s', 'm', 'l']
+  }
 ]
+
+const SCALE_LABELS: Record<string, string> = { s: 'Small', m: 'Medium', l: 'Large' }
 
 export default function Settings(): JSX.Element {
   const [values, setValues] = useState<Record<string, string>>({})
@@ -37,11 +47,13 @@ export default function Settings(): JSX.Element {
   const update = (key: string, value: string): void => {
     setValues((prev) => ({ ...prev, [key]: value }))
     void api.setSetting(key, value)
+    if (key === 'fontScale') {
+      api.setZoom(ZOOM_FACTORS[value as FontScale] ?? ZOOM_FACTORS.m)
+    }
   }
 
   return (
     <div className="settings">
-      <h3>Settings</h3>
       {SPECS.map((s) => (
         <div className="settings-field" key={s.key}>
           <label htmlFor={`set-${s.key}`}>{s.label}</label>
@@ -53,7 +65,7 @@ export default function Settings(): JSX.Element {
             >
               {s.options!.map((o) => (
                 <option key={o} value={o}>
-                  {o}
+                  {s.key === 'fontScale' ? SCALE_LABELS[o] : o}
                 </option>
               ))}
             </select>

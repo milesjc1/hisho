@@ -5,7 +5,7 @@
 // and src/renderer/assets/hisho.png (128, sidebar brand).
 import Jimp from 'jimp'
 import pngToIco from 'png-to-ico'
-import { writeFileSync, mkdirSync } from 'fs'
+import { writeFileSync, mkdirSync, rmSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -28,7 +28,15 @@ const icon256 = await square(256, join(root, 'resources', 'icon.png'))
 mkdirSync(join(root, 'src', 'renderer', 'assets'), { recursive: true })
 await square(128, join(root, 'src', 'renderer', 'assets', 'hisho.png'))
 
-const ico = await pngToIco([icon256])
+// Multi-resolution .ico so Windows has crisp frames at every size
+// (taskbar 16/24/32, shortcuts 48, tiles 256) instead of downscaling one 256.
+const tmp = join(root, 'resources', '.ico-tmp')
+mkdirSync(tmp, { recursive: true })
+const icoSizes = [16, 24, 32, 48, 64, 128, 256]
+const icoFrames = []
+for (const s of icoSizes) icoFrames.push(await square(s, join(tmp, `${s}.png`)))
+const ico = await pngToIco(icoFrames)
 writeFileSync(join(root, 'resources', 'app.ico'), ico)
+rmSync(tmp, { recursive: true, force: true })
 
 console.log('wrote resources/app.ico, resources/icon.png, src/renderer/assets/hisho.png')

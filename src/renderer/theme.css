@@ -1,50 +1,74 @@
-/* ayu-dark theme + TT Norms Pro */
+/* Hisho v2 dark theme + Figtree (claude.ai/design redesign) */
 
 @font-face {
-  font-family: 'TT Norms Pro';
-  src: url('/fonts/TTNormsPro-Normal.ttf') format('truetype');
+  font-family: 'Figtree';
+  src: url('/fonts/figtree/figtree-400-normal.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'TT Norms Pro';
-  src: url('/fonts/TTNormsPro-Medium.ttf') format('truetype');
+  font-family: 'Figtree';
+  src: url('/fonts/figtree/figtree-500-normal.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'TT Norms Pro';
-  src: url('/fonts/TTNormsPro-Bold.ttf') format('truetype');
+  font-family: 'Figtree';
+  src: url('/fonts/figtree/figtree-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Figtree';
+  src: url('/fonts/figtree/figtree-700-normal.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-  font-family: 'TT Norms Pro';
-  src: url('/fonts/TTNormsPro-ExtraBold.ttf') format('truetype');
+  font-family: 'Figtree';
+  src: url('/fonts/figtree/figtree-800-normal.woff2') format('woff2');
   font-weight: 800;
   font-style: normal;
   font-display: swap;
 }
 
 :root {
-  --bg: #0b0e14;
-  --panel: #0f131a;
-  --col: #11161f;
-  --center: #0e1420;
-  --line: #1e232b;
-  --fg: #bfbdb6;
-  --muted: #686868;
-  --white: #fff;
-  --blue: #59c2ff;
-  --green: #aad94c;
-  --yellow: #ffb454;
-  --red: #f07178;
-  --cyan: #95e6cb;
-  --magenta: #d2a6ff;
-  --font: 'TT Norms Pro', -apple-system, 'Segoe UI', sans-serif;
+  /* Backgrounds */
+  --bg: #191919;
+  --panel: #1d1d1d;
+  --card: #252525;
+  --card-new: #1d2535;
+  --line: #252525;
+  --line-soft: rgba(255, 255, 255, 0.06);
+
+  /* Text */
+  --fg: #bbbbbb;
+  --muted: #555;
+  --faint: #3d3d3d;
+  --white: #bbbbbb;
+
+  /* Accents */
+  --accent: #d68c67; /* terracotta — primary / brand / pull */
+  --blue: #6099c0; /* Active */
+  --green: #8bae68; /* done / manual */
+  --pink: #cf86c1; /* replied */
+  --stale: #de6e7c;
+  --red: #de6e7c;
+
+  /* Source badge colors */
+  --src-slack: #b279a7;
+  --src-teams: #6099c0;
+  --src-outlook: #66a5ad;
+  --src-github: #8e8e8e;
+  --src-linear: #61abda;
+  --src-manual: #8bae68;
+  --src-recurring: #65b8c1;
+
+  --font: 'Figtree', -apple-system, 'Segoe UI', sans-serif;
 }
 
 * {
@@ -71,4 +95,32 @@ select,
 button,
 textarea {
   font-family: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
