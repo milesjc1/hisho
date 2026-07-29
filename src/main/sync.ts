@@ -1,53 +1,63 @@
-import { spawn } from 'child_process'
 import { emitToRenderer, setBadgeCount, showAndFocus } from './window'
 import { notify } from './notify'
-import { newCount, getSetting } from './db'
-
-const PROJECTS_DIR = 'C:\\Users\\MilesChristensen\\Desktop\\claude-projects'
-const CLAUDE = 'C:\\Users\\MilesChristensen\\.local\\bin\\claude.exe'
+import { ingest, dismissEntries, newCount, getSetting } from './db'
+import { collectAll, candidateToIngest } from './collect'
+import { triage } from './triage'
+import type { PullEvent } from '../shared/types'
 
 let running = false
 
-/** DB file the skill's plate-write must target (same file the app opened). */
-function dbFile(): string {
-  return process.env.PLATE_DB || `${process.env.APPDATA}\\Hisho\\hisho.db`
+function emitPull(ev: PullEvent): void {
+  emitToRenderer('pull:event', ev)
+}
+function line(text: string): void {
+  emitPull({ type: 'line', text })
 }
 
-/** Spawn the whats-on-my-plate skill headless; it writes to the DB via plate-write. */
-export function runPull(days: number): Promise<{ ok: boolean; error?: string }> {
-  if (running) return Promise.resolve({ ok: false, error: 'already running' })
+/**
+ * Pull the plate: deterministic collectors hit every source in parallel, the
+ * LLM triages the candidate pool (noise vs keep), and the app writes directly
+ * to the DB. The LLM never touches the network or the DB. Dedup is automatic —
+ * ingest() skips anything already stored (including resolved items).
+ */
+export async function runPull(days: number): Promise<{ ok: boolean; error?: string }> {
+  if (running) return { ok: false, error: 'already running' }
   running = true
-  return new Promise((resolve) => {
-    const prompt = `what's on my plate (last ${days} days)`
-    const args = ['-p', '--permission-mode', 'auto', '--model', getSetting('scanModel') || 'sonnet']
-    const child = spawn(`"${CLAUDE}" ${args.join(' ')}`, {
-      cwd: PROJECTS_DIR,
-      shell: true,
-      windowsHide: true,
-      env: { ...process.env, PLATE_DB: dbFile() }
-    })
-    let stderr = ''
-    child.stderr.on('data', (d) => (stderr += d.toString()))
-    child.stdin.write(prompt)
-    child.stdin.end()
-    child.on('error', (e) => {
-      running = false
-      resolve({ ok: false, error: e.message })
-    })
-    child.on('close', (code) => {
-      running = false
-      setBadgeCount(newCount())
-      emitToRenderer('items:changed')
-      if (code === 0) {
-        const n = newCount()
-        if (n > 0) {
-          notify(`${n} on your plate`, 'Hisho pulled new items.')
-          showAndFocus()
-        }
-        resolve({ ok: true })
-      } else {
-        resolve({ ok: false, error: `claude exited ${code}: ${stderr.slice(0, 400)}` })
-      }
-    })
-  })
+  emitPull({ type: 'start' })
+
+  try {
+    // 1. Collect (deterministic, parallel, no LLM).
+    const { candidates, results } = await collectAll(days)
+    for (const r of results) {
+      if (r.error) line(`${r.source}: ${r.candidates.length} found (note: ${r.error})`)
+      else line(`${r.source}: ${r.candidates.length} found`)
+    }
+    line(`${candidates.length} candidates total`)
+
+    // 2. Triage (LLM's only job — pure classification).
+    const model = getSetting('scanModel') || 'sonnet'
+    const { keep, dismiss } = await triage(candidates, model)
+
+    // 3. Write (app writes; dedup handled by ingest()).
+    const inserted = ingest(keep.map(candidateToIngest))
+    const dismissed = dismiss.length ? dismissEntries(dismiss) : 0
+    line(`${inserted} new on your plate, ${dismissed} auto-dismissed`)
+
+    setBadgeCount(newCount())
+    emitToRenderer('items:changed')
+    emitPull({ type: 'end', code: 0 })
+
+    if (inserted > 0) {
+      notify(`${inserted} on your plate`, 'Hisho pulled new items.')
+      showAndFocus()
+    }
+    return { ok: true }
+  } catch (e) {
+    const error = (e as Error).message
+    line(`[error] ${error}`)
+    emitPull({ type: 'end', code: 1, error })
+    return { ok: false, error }
+  } finally {
+    running = false
+  }
 }

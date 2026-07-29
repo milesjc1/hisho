@@ -20,3 +20,6 @@ Thumbs.db
 # local env
 .env
 .env.local
+
+# secrets — real credentials live in %APPDATA%\Hisho\credentials.json, never here
+credentials.json
