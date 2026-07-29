@@ -29,6 +29,7 @@ export default function ItemCard({ item, variant, staleDays }: Props): JSX.Eleme
   const badge = (
     <span className="badge" style={{ color: style.color, background: style.bg }}>
       {SOURCE_LABELS[item.source]}
+      {item.kind && ` · ${item.kind}`}
     </span>
   )
 

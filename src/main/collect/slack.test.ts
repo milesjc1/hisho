@@ -1,5 +1,30 @@
 import { it, expect } from 'vitest'
-import { blockText } from './slack'
+import { blockText, slackTitle, slackDescriptor } from './slack'
+
+it('slackTitle names the human or bot sender', () => {
+  expect(slackTitle({ username: 'kris.johnson' })).toBe('Message from kris.johnson')
+  expect(slackTitle({ username: 'linear' })).toBe('Message from linear')
+})
+
+it('slackTitle falls back to user id, then a generic name', () => {
+  expect(slackTitle({ user: 'U07B9RCRUMU' })).toBe('Message from U07B9RCRUMU')
+  expect(slackTitle({})).toBe('Message from someone')
+})
+
+it('slackDescriptor labels DM / group chat / channel', () => {
+  expect(slackDescriptor({ is_im: true, name: 'U07BP9QRZ3R' })).toBe('DM')
+  expect(slackDescriptor({ is_mpim: true, name: 'mpdm-a--b--c-1' })).toBe('Group chat')
+  expect(slackDescriptor({ is_channel: true, name: 'engineering' })).toBe('#engineering')
+})
+
+it('slackDescriptor never leaks a user-id channel name as #name', () => {
+  // DMs report the other user id as channel.name — must not surface as "#U07..."
+  expect(slackDescriptor({ is_im: true, name: 'U07BP9QRZ3R' })).toBe('DM')
+})
+
+it('slackDescriptor falls back to Channel when a channel has no name', () => {
+  expect(slackDescriptor({ is_channel: true })).toBe('Channel')
+})
 
 it('returns top-level text as-is when present (human message)', () => {
   expect(blockText({ text: '  is selina on that chat  ' })).toBe('is selina on that chat')
