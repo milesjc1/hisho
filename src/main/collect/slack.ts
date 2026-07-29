@@ -16,15 +16,39 @@ async function slack(method: string, token: string, params: Record<string, strin
   return json
 }
 
+interface SlackChannel {
+  id?: string
+  name?: string
+  is_im?: boolean
+  is_mpim?: boolean
+  is_channel?: boolean
+  is_group?: boolean
+}
+
 interface SlackMatch {
   user?: string
   username?: string
   ts: string
   text?: string
   permalink?: string
-  channel?: { id?: string; name?: string; is_im?: boolean }
+  channel?: SlackChannel
   blocks?: any[]
   attachments?: any[]
+}
+
+/** Item title: who the message is from. `username` is the display handle (human
+ * or app, e.g. "kris.johnson", "linear"); fall back to the raw user id. */
+export function slackTitle(match: Pick<SlackMatch, 'username' | 'user'>): string {
+  return `Message from ${match.username ?? match.user ?? 'someone'}`
+}
+
+/** Human-readable "where from" descriptor shown after the Slack tag. DMs report
+ * the other party's user id as `channel.name`, so never surface that as `#name`. */
+export function slackDescriptor(channel?: SlackChannel): string {
+  if (!channel) return 'DM'
+  if (channel.is_im) return 'DM'
+  if (channel.is_mpim) return 'Group chat'
+  return channel.name ? `#${channel.name}` : 'Channel'
 }
 
 /**
@@ -98,14 +122,14 @@ export async function collectSlack(days: number, token: string): Promise<Candida
     if (seen.has(extId)) continue
     seen.add(extId)
     const text = blockText(m)
-    const label = m.channel?.name ? `#${m.channel.name}` : 'Slack DM'
+    const descriptor = slackDescriptor(m.channel)
     out.push({
       source: 'slack',
       external_id: extId,
-      kind: m.channel?.is_im ? 'dm' : 'mention',
-      title: label,
+      kind: descriptor,
+      title: slackTitle(m),
       author: m.username ?? m.user,
-      snippet: text ? text.slice(0, 200) : (m.username ?? label),
+      snippet: text ? text.slice(0, 200) : descriptor,
       deep_link: m.permalink,
       app_link: `slack://channel?id=${chId}&message=${m.ts}`,
       source_ts: new Date(Number(m.ts) * 1000).toISOString()

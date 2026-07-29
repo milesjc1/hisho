@@ -34,11 +34,15 @@ export async function runPull(days: number): Promise<{ ok: boolean; error?: stri
     }
     line(`${candidates.length} candidates total`)
 
-    // 2. Triage (LLM's only job — pure classification).
+    // 2. Triage (LLM's only job — pure classification). This is the slow step —
+    // log before and after so the pull log isn't silent while the model thinks.
     const model = getSetting('scanModel') || 'sonnet'
+    line(`triaging ${candidates.length} with ${model}…`)
     const { keep, dismiss } = await triage(candidates, model)
+    line(`triage: ${keep.length} kept, ${dismiss.length} flagged as noise`)
 
     // 3. Write (app writes; dedup handled by ingest()).
+    line('writing to your plate…')
     const inserted = ingest(keep.map(candidateToIngest))
     const dismissed = dismiss.length ? dismissEntries(dismiss) : 0
     line(`${inserted} new on your plate, ${dismissed} auto-dismissed`)
