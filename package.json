@@ -1,6 +1,6 @@
 {
   "name": "desktop-hisho",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Hisho — three-panel 'what's on my plate' board. Scans Slack/Teams/Outlook/GitHub/Linear via the whats-on-my-plate Claude skill; drag items between backburner/active/responded/done; periodic nags + stale-follow-up nudges.",
   "main": "./out/main/index.js",
   "author": "Miles Christensen",
