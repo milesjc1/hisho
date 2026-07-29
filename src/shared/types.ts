@@ -133,3 +133,38 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
   med: 'Medium',
   low: 'Low'
 }
+
+// ---------- Auto-update status (main → renderer) ----------
+
+/** Where the app is in the update lifecycle. `dev` = unpackaged run, updates disabled. */
+export type UpdateState =
+  | 'idle'
+  | 'checking'
+  | 'up-to-date'
+  | 'available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+  | 'dev'
+
+/** Snapshot of the electron-updater state, surfaced in Settings. */
+export interface UpdateStatus {
+  currentVersion: string
+  state: UpdateState
+  /** Version offered by the newest release, when one is available. */
+  availableVersion: string | null
+  /** 0-100 while `downloading`, else null. */
+  progressPercent: number | null
+  /** Epoch ms of the last manual/automatic check, or null if never checked. */
+  lastChecked: number | null
+  error: string | null
+}
+
+/** Events the updater feeds into the status reducer (mirror autoUpdater events). */
+export type UpdateEvent =
+  | { type: 'checking' }
+  | { type: 'available'; version: string }
+  | { type: 'not-available' }
+  | { type: 'progress'; percent: number }
+  | { type: 'downloaded'; version: string }
+  | { type: 'error'; message: string }

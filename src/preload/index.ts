@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webFrame } from 'electron'
-import type { Item, ItemState, PullEvent } from '../shared/types'
+import type { Item, ItemState, PullEvent, UpdateStatus } from '../shared/types'
 
 // Typed, allowlisted bridge. Renderer never touches ipcRenderer directly.
 const api = {
@@ -29,6 +29,13 @@ const api = {
     const h = (_e: unknown, ev: PullEvent): void => cb(ev)
     ipcRenderer.on('pull:event', h)
     return () => ipcRenderer.removeListener('pull:event', h)
+  },
+  getUpdateStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke('update:status'),
+  checkForUpdates: (): Promise<void> => ipcRenderer.invoke('update:check'),
+  onUpdateChanged: (cb: (s: UpdateStatus) => void): (() => void) => {
+    const h = (_e: unknown, s: UpdateStatus): void => cb(s)
+    ipcRenderer.on('update:changed', h)
+    return () => ipcRenderer.removeListener('update:changed', h)
   }
 }
 
