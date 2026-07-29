@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import type { Item, ItemState } from '../shared/types'
+import { contextBridge, ipcRenderer, webFrame } from 'electron'
+import type { Item, ItemState, PullEvent } from '../shared/types'
 
 // Typed, allowlisted bridge. Renderer never touches ipcRenderer directly.
 const api = {
@@ -17,10 +17,18 @@ const api = {
     ipcRenderer.invoke('pull:run', days),
   getSetting: (k: string): Promise<string | null> => ipcRenderer.invoke('settings:get', k),
   setSetting: (k: string, v: string): Promise<void> => ipcRenderer.invoke('settings:set', k, v),
+  setZoom: (factor: number): void => {
+    webFrame.setZoomFactor(factor)
+  },
   onItemsChanged: (cb: () => void): (() => void) => {
     const h = (): void => cb()
     ipcRenderer.on('items:changed', h)
     return () => ipcRenderer.removeListener('items:changed', h)
+  },
+  onPullEvent: (cb: (ev: PullEvent) => void): (() => void) => {
+    const h = (_e: unknown, ev: PullEvent): void => cb(ev)
+    ipcRenderer.on('pull:event', h)
+    return () => ipcRenderer.removeListener('pull:event', h)
   }
 }
 

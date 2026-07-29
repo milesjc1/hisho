@@ -3,23 +3,25 @@ import Board from './Board'
 import DoneView from './DoneView'
 import DismissedView from './DismissedView'
 import Settings from './Settings'
-import AddManual from './AddManual'
-
-type View = 'board' | 'done' | 'dismissed' | 'settings'
+import PullLog from './PullLog'
+import Sidebar, { type View } from './Sidebar'
+import { ZOOM_FACTORS, type FontScale } from '../shared/types'
 
 const api = window.hisho
-const DAY_OPTIONS = [1, 3, 7]
 
 export default function App(): JSX.Element {
   const [view, setView] = useState<View>('board')
   const [days, setDays] = useState(7)
   const [scanning, setScanning] = useState(false)
   const [pullError, setPullError] = useState<string | null>(null)
-  const [showAdd, setShowAdd] = useState(false)
 
   useEffect(() => {
     void api.getSetting('scanDays').then((v) => {
       if (v != null) setDays(Number(v))
+    })
+    void api.getSetting('fontScale').then((v) => {
+      const scale = (v ?? 'm') as FontScale
+      api.setZoom(ZOOM_FACTORS[scale] ?? ZOOM_FACTORS.m)
     })
   }, [])
 
@@ -42,45 +44,26 @@ export default function App(): JSX.Element {
     }
   }
 
-  const navBtn = (id: View, label: string): JSX.Element => (
-    <button className={`btn ${view === id ? 'active' : ''}`} onClick={() => setView(id)}>
-      {label}
-    </button>
-  )
-
   return (
     <div className="app">
-      <div className="topbar">
-        <span className="brand">Hisho</span>
+      <Sidebar
+        view={view}
+        onNavigate={setView}
+        days={days}
+        onChangeDays={changeDays}
+        scanning={scanning}
+        onPull={() => void pull()}
+        pullError={pullError}
+      />
 
-        {showAdd && <AddManual />}
+      <div className="main">
+        {view === 'board' && <Board />}
+        {view === 'done' && <DoneView />}
+        {view === 'dismissed' && <DismissedView />}
+        {view === 'settings' && <Settings />}
 
-        <select className="sel" value={days} onChange={(e) => changeDays(Number(e.target.value))}>
-          {DAY_OPTIONS.map((d) => (
-            <option key={d} value={d}>
-              Last {d} {d === 1 ? 'day' : 'days'}
-            </option>
-          ))}
-        </select>
-
-        <button className="btn primary" onClick={() => void pull()} disabled={scanning}>
-          {scanning ? 'Scanning…' : 'Pull'}
-        </button>
-        {pullError && <span className="pull-error">{pullError}</span>}
-
-        <button className="btn" onClick={() => setShowAdd((s) => !s)}>
-          + Add
-        </button>
-        {navBtn('done', 'Done')}
-        {navBtn('dismissed', 'Dismissed')}
-        {navBtn('settings', 'Settings')}
-        {view !== 'board' && navBtn('board', 'Board')}
+        <PullLog />
       </div>
-
-      {view === 'board' && <Board />}
-      {view === 'done' && <DoneView />}
-      {view === 'dismissed' && <DismissedView />}
-      {view === 'settings' && <Settings />}
     </div>
   )
 }

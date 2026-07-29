@@ -7,11 +7,12 @@ interface Props {
   title: string
   count: number
   state: ItemState
-  className?: string
+  icon: ReactNode
+  accent?: boolean
   children: ReactNode
 }
 
-export default function Panel({ title, count, state, className, children }: Props): JSX.Element {
+export default function Panel({ title, count, state, icon, accent, children }: Props): JSX.Element {
   const onDragOver = (e: DragEvent<HTMLDivElement>): void => {
     e.preventDefault()
     e.currentTarget.classList.add('drop-hover')
@@ -28,15 +29,17 @@ export default function Panel({ title, count, state, className, children }: Prop
 
   return (
     <div
-      className={`panel ${className ?? ''}`}
+      className={`panel ${accent ? 'accent' : ''}`}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
-      <h4>
-        {title} <span className="cnt">{count}</span>
-      </h4>
-      {children}
+      <div className="panel-head">
+        <span className="panel-icon">{icon}</span>
+        <span className="panel-title">{title}</span>
+        <span className="panel-count">{count}</span>
+      </div>
+      <div className="panel-body">{children}</div>
     </div>
   )
 }

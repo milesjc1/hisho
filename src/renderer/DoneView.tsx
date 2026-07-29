@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Item } from '../shared/types'
-import { SOURCE_BADGE, SOURCE_LABELS } from './lib'
+import { SOURCE_LABELS, sourceStyle } from './lib'
 
 const api = window.hisho
 
@@ -18,18 +18,24 @@ export default function DoneView(): JSX.Element {
 
   return (
     <div className="list-view">
-      <h3>Done</h3>
       {items.length === 0 && <div className="list-empty">Nothing done yet.</div>}
-      {items.map((i) => (
-        <div className="list-row" key={i.id}>
-          <span className="row-title">{i.title}</span>
-          <span className={`badge ${SOURCE_BADGE[i.source] ?? ''}`}>{SOURCE_LABELS[i.source]}</span>
-          <span className="spacer" />
-          <button className="btn" onClick={() => void api.restore(i.id)}>
-            Restore
-          </button>
-        </div>
-      ))}
+      {items.map((i) => {
+        const style = sourceStyle(i.source)
+        return (
+          <div className="list-row" key={i.id}>
+            <svg className="row-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span className="row-title">{i.title}</span>
+            <span className="badge" style={{ color: style.color, background: style.bg }}>
+              {SOURCE_LABELS[i.source]}
+            </span>
+            <button className="restore-btn" onClick={() => void api.restore(i.id)}>
+              Restore
+            </button>
+          </div>
+        )
+      })}
     </div>
   )
 }

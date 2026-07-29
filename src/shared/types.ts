@@ -86,6 +86,17 @@ export interface IngestItem {
 /** {source, external_id, reason} — skill triage dismiss payload. */
 export interface DismissEntry { source: ItemSource; external_id: string; reason: string }
 
+/** Streamed pull output events (main → renderer, raw JSONL feed). */
+export type PullEvent =
+  | { type: 'start' }
+  | { type: 'line'; text: string }
+  | { type: 'end'; code: number; error?: string }
+
+/** UI zoom levels (renderer webFrame.setZoomFactor). */
+export type FontScale = 's' | 'm' | 'l'
+
+export const ZOOM_FACTORS: Record<FontScale, number> = { s: 1.0, m: 1.15, l: 1.3 }
+
 export interface RecurringRule {
   id: number
   title: string
