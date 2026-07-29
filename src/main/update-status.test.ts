@@ -1,6 +1,6 @@
 import { it, expect } from 'vitest'
-import { initialStatus, reduceUpdateStatus } from './update-status'
-import type { UpdateStatus } from '../shared/types'
+import { initialStatus, reduceUpdateStatus, isInstallable } from './update-status'
+import type { UpdateStatus, UpdateState } from '../shared/types'
 
 const base = (): UpdateStatus => initialStatus('1.2.3', null)
 
@@ -55,6 +55,13 @@ it('reducer never mutates its input', () => {
   const snapshot = { ...prev }
   reduceUpdateStatus(prev, { type: 'available', version: '2.0.0' })
   expect(prev).toEqual(snapshot)
+})
+
+it('isInstallable is true only in the downloaded state', () => {
+  const states: UpdateState[] = ['idle', 'checking', 'up-to-date', 'available', 'downloading', 'downloaded', 'error', 'dev']
+  for (const state of states) {
+    expect(isInstallable({ ...base(), state })).toBe(state === 'downloaded')
+  }
 })
 
 it('currentVersion and lastChecked are preserved across transitions', () => {
