@@ -13,7 +13,7 @@ import {
   setSetting
 } from './db'
 import { runPull } from './sync'
-import { checkNow, getStatus } from './updater'
+import { checkNow, getStatus, installNow } from './updater'
 import { emitToRenderer, setBadgeCount } from './window'
 import type { ItemState } from '../shared/types'
 
@@ -66,4 +66,5 @@ export function registerIpc(): void {
   // ---------- updates ----------
   ipcMain.handle('update:check', () => checkNow())
   ipcMain.handle('update:status', () => getStatus())
+  ipcMain.handle('update:install', () => installNow())
 }

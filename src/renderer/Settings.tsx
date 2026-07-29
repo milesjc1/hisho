@@ -133,13 +133,19 @@ export default function Settings(): JSX.Element {
           <span className="updates-label">Last checked</span>
           <span className="updates-value">{lastCheckedLabel(updateStatus?.lastChecked ?? null)}</span>
         </div>
-        <button
-          className="pull-btn"
-          disabled={updateStatus?.state === 'checking' || updateStatus?.state === 'downloading'}
-          onClick={() => void api.checkForUpdates()}
-        >
-          Check for updates
-        </button>
+        {updateStatus?.state === 'downloaded' ? (
+          <button className="pull-btn" onClick={() => void api.installUpdate()}>
+            Restart &amp; install now
+          </button>
+        ) : (
+          <button
+            className="pull-btn"
+            disabled={updateStatus?.state === 'checking' || updateStatus?.state === 'downloading'}
+            onClick={() => void api.checkForUpdates()}
+          >
+            Check for updates
+          </button>
+        )}
         <p className="updates-note">New versions appear here after a release is published.</p>
       </div>
     </div>

@@ -1,5 +1,10 @@
 import type { UpdateStatus, UpdateEvent } from '../shared/types'
 
+/** True once an update is downloaded and waiting — the only state where a restart-to-install is meaningful. */
+export function isInstallable(status: UpdateStatus): boolean {
+  return status.state === 'downloaded'
+}
+
 /** Fresh status snapshot. Pure — no Electron, so it's unit-testable. */
 export function initialStatus(currentVersion: string, lastChecked: number | null): UpdateStatus {
   return {

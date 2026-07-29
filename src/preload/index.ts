@@ -32,6 +32,7 @@ const api = {
   },
   getUpdateStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke('update:status'),
   checkForUpdates: (): Promise<void> => ipcRenderer.invoke('update:check'),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('update:install'),
   onUpdateChanged: (cb: (s: UpdateStatus) => void): (() => void) => {
     const h = (_e: unknown, s: UpdateStatus): void => cb(s)
     ipcRenderer.on('update:changed', h)

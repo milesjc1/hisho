@@ -1,9 +1,9 @@
 import { app } from 'electron'
 import electronUpdater from 'electron-updater'
 import { notify } from './notify'
-import { emitToRenderer } from './window'
+import { emitToRenderer, setQuitting } from './window'
 import { getSetting, setSetting } from './db'
-import { initialStatus, reduceUpdateStatus } from './update-status'
+import { initialStatus, reduceUpdateStatus, isInstallable } from './update-status'
 import type { UpdateEvent, UpdateStatus } from '../shared/types'
 
 const { autoUpdater } = electronUpdater
@@ -40,6 +40,18 @@ function apply(ev: UpdateEvent): void {
 export function getStatus(): UpdateStatus {
   ensureHydrated()
   return status
+}
+
+/**
+ * Quit and install a downloaded update now, instead of waiting for the user to
+ * fully quit (the window hides to tray on close, so that rarely happens).
+ * No-op unless an update is actually downloaded. `setQuitting(true)` first, or
+ * the close-to-tray handler swallows the quit and nothing installs.
+ */
+export function installNow(): void {
+  if (!isInstallable(status)) return
+  setQuitting(true)
+  autoUpdater.quitAndInstall()
 }
 
 /**
