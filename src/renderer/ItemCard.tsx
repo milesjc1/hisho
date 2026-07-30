@@ -1,6 +1,6 @@
 import type { DragEvent } from 'react'
 import type { Item } from '../shared/types'
-import { SOURCE_LABELS, sourceStyle, waitingDays } from './lib'
+import { SOURCE_LABELS, sourceStyle, waitingDays, formatItemTime } from './lib'
 
 const api = window.hisho
 
@@ -19,6 +19,16 @@ export default function ItemCard({ item, variant, staleDays }: Props): JSX.Eleme
 
   const days = variant === 'responded' ? waitingDays(item.responded_at) : null
   const stale = staleDays != null && days != null && days >= staleDays
+  const time = formatItemTime(item.source_ts)
+
+  // Title opens the source (Slack DM, PR, issue…) when the item has a link.
+  const titleEl = link ? (
+    <button className="title title-link" title="Open" onClick={() => void api.openLink(link)}>
+      {item.title}
+    </button>
+  ) : (
+    <div className="title">{item.title}</div>
+  )
 
   const onDragStart = (e: DragEvent<HTMLDivElement>): void => {
     e.dataTransfer.setData('text/plain', String(item.id))
@@ -38,21 +48,15 @@ export default function ItemCard({ item, variant, staleDays }: Props): JSX.Eleme
       {variant === 'triage' ? (
         <div className="card-title-row">
           <span className="new-chip">NEW</span>
-          <div className="title">{item.title}</div>
+          {titleEl}
         </div>
       ) : (
-        <div className="card-title-row">
-          <div className="title">{item.title}</div>
-          {variant === 'active' && link && (
-            <button className="open-btn" onClick={() => void api.openLink(link)}>
-              Open
-            </button>
-          )}
-        </div>
+        <div className="card-title-row">{titleEl}</div>
       )}
 
       <div className="meta">
         {badge}
+        {time && <span className="meta-text">{time}</span>}
         {metaParts.length > 0 && <span className="meta-text">{metaParts.join(' · ')}</span>}
         {days != null && (
           <span className={`waiting ${stale ? 'stale' : ''}`}>waiting {days}d</span>

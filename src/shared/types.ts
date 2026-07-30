@@ -67,6 +67,8 @@ export interface Item {
   state: ItemState
   status_reason: string | null
   responded_at: number | null
+  /** ISO-8601 timestamp of the underlying message/activity (Slack DM time, etc). */
+  source_ts: string | null
   created_at: number
   last_touched_at: number
 }
@@ -81,6 +83,8 @@ export interface IngestItem {
   snippet?: string | null
   deep_link?: string | null
   app_link?: string | null
+  /** ISO-8601 timestamp of the underlying message/activity. */
+  source_ts?: string | null
 }
 
 /** {source, external_id, reason} — skill triage dismiss payload. */
