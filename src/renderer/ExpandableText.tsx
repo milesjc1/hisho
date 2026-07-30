@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { expandableText } from './lib'
+import RichText from './RichText'
 
 interface Props {
   snippet: string | null
@@ -15,7 +16,9 @@ export default function ExpandableText({ snippet, body, className }: Props): JSX
   if (!text) return null
   return (
     <div className={className}>
-      <span className={`desc-text${expanded ? ' expanded' : ''}`}>{text}</span>
+      <span className={`desc-text${expanded ? ' expanded' : ''}`}>
+        <RichText text={text} />
+      </span>
       {hasMore && (
         <button className="see-more" onClick={() => setExpanded((e) => !e)}>
           {expanded ? 'See less' : 'See more'}
