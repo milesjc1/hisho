@@ -7,8 +7,9 @@ interface SettingSpec {
   key: string
   label: string
   default: string
-  type: 'number' | 'select'
+  type: 'number' | 'select' | 'textarea'
   options?: string[]
+  placeholder?: string
 }
 
 const SPECS: SettingSpec[] = [
@@ -30,6 +31,20 @@ const SPECS: SettingSpec[] = [
     default: 'm',
     type: 'select',
     options: ['s', 'm', 'l']
+  },
+  {
+    key: 'triageRules',
+    label: 'Extra triage rules',
+    default: '',
+    type: 'textarea',
+    placeholder: 'Ignore Jira digest emails. Always keep messages from my manager.'
+  },
+  {
+    key: 'ignoreList',
+    label: 'Ignore list (one per line: #channel, @sender, or keyword)',
+    default: '',
+    type: 'textarea',
+    placeholder: '#deploys\n@reminders-bot\nstandup'
   }
 ]
 
@@ -109,6 +124,15 @@ export default function Settings(): JSX.Element {
                 </option>
               ))}
             </select>
+          ) : s.type === 'textarea' ? (
+            <textarea
+              id={`set-${s.key}`}
+              className="settings-textarea"
+              rows={4}
+              placeholder={s.placeholder}
+              value={values[s.key] ?? s.default}
+              onChange={(e) => update(s.key, e.target.value)}
+            />
           ) : (
             <input
               id={`set-${s.key}`}

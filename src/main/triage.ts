@@ -26,20 +26,14 @@ List only items to dismiss; everything not listed is kept.`
  * No tools, no network, no DB writes. Everything the model doesn't dismiss is
  * kept (fail-open — a triage failure keeps all candidates rather than losing them).
  */
-export async function triage(candidates: Candidate[], model: string): Promise<TriageResult> {
+export async function triage(
+  candidates: Candidate[],
+  model: string,
+  userRules?: string
+): Promise<TriageResult> {
   if (candidates.length === 0) return { keep: [], dismiss: [] }
 
-  const prompt = `${RULES}\n\nCANDIDATES:\n${JSON.stringify(
-    candidates.map((c) => ({
-      source: c.source,
-      external_id: c.external_id,
-      title: c.title,
-      sender: c.author ?? c.sender,
-      snippet: c.snippet,
-      kind: c.kind,
-      source_ts: c.source_ts
-    }))
-  )}`
+  const prompt = buildTriagePrompt(candidates, userRules)
 
   let dismissKeys: Set<string>
   let dismiss: DismissEntry[]
@@ -55,6 +49,30 @@ export async function triage(candidates: Candidate[], model: string): Promise<Tr
 
   const keep = candidates.filter((c) => !dismissKeys.has(`${c.source}|${c.external_id}`))
   return { keep, dismiss }
+}
+
+/**
+ * Assemble the triage prompt: base RULES, then the user's own natural-language
+ * rules (when any), then the candidates payload. The user block is labelled and
+ * placed before CANDIDATES so the model reads it as guidance, not data.
+ */
+export function buildTriagePrompt(candidates: Candidate[], userRules?: string): string {
+  const extra = (userRules ?? '').trim()
+  const userBlock = extra
+    ? `\n\nADDITIONAL RULES FROM THE USER (apply with the same weight; when unsure, KEEP):\n${extra}`
+    : ''
+  const payload = JSON.stringify(
+    candidates.map((c) => ({
+      source: c.source,
+      external_id: c.external_id,
+      title: c.title,
+      sender: c.author ?? c.sender,
+      snippet: c.snippet,
+      kind: c.kind,
+      source_ts: c.source_ts
+    }))
+  )
+  return `${RULES}${userBlock}\n\nCANDIDATES:\n${payload}`
 }
 
 export function parseDismiss(text: string): DismissEntry[] {

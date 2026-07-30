@@ -1,5 +1,29 @@
 import { it, expect } from 'vitest'
-import { parseDismiss, extractJson } from './triage'
+import { parseDismiss, extractJson, buildTriagePrompt } from './triage'
+import type { Candidate } from './collect/types'
+
+const cands: Candidate[] = [
+  { source: 'slack', external_id: 'a', title: 'Message from kris', snippet: 'hey', kind: 'DM' }
+]
+
+it('buildTriagePrompt always includes the base rules and the candidates JSON', () => {
+  const p = buildTriagePrompt(cands, '')
+  expect(p).toContain('You triage a candidate list')
+  expect(p).toContain('"external_id":"a"')
+  expect(p).not.toContain('ADDITIONAL RULES')
+})
+
+it('buildTriagePrompt appends a labelled block only when user rules are present', () => {
+  const p = buildTriagePrompt(cands, 'Ignore Jira digests. Always keep my manager.')
+  expect(p).toContain('ADDITIONAL RULES')
+  expect(p).toContain('Ignore Jira digests. Always keep my manager.')
+  // user block sits before the candidates payload
+  expect(p.indexOf('ADDITIONAL RULES')).toBeLessThan(p.indexOf('CANDIDATES:'))
+})
+
+it('buildTriagePrompt ignores whitespace-only user rules', () => {
+  expect(buildTriagePrompt(cands, '   \n ')).not.toContain('ADDITIONAL RULES')
+})
 
 it('extractJson strips ```json code fences (what the model actually returns)', () => {
   const fenced = '```json\n{"dismiss":[{"source":"outlook","external_id":"m1","reason":"spam"}]}\n```'
