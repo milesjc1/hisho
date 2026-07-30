@@ -7,6 +7,7 @@ import { createWindow, createTray, showWindow, setQuitting, focusCapture } from 
 import { startRecurring, stopRecurring } from './recurring'
 import { startNag, stopNag } from './nag'
 import { startStale, stopStale } from './stale'
+import { initAutoPull, stopAutoPull } from './auto-pull'
 import { initAutoUpdate } from './updater'
 
 // Single instance: focus the existing window instead of launching a second copy.
@@ -50,6 +51,7 @@ if (!app.requestSingleInstanceLock()) {
     startRecurring()
     startNag()
     startStale()
+    initAutoPull()
     initAutoUpdate()
 
     // Global hotkey for instant manual capture — beat the sticky note.
@@ -68,6 +70,7 @@ if (!app.requestSingleInstanceLock()) {
     stopRecurring()
     stopNag()
     stopStale()
+    stopAutoPull()
   })
 
   app.on('will-quit', () => globalShortcut.unregisterAll())

@@ -25,6 +25,14 @@ const SPECS: SettingSpec[] = [
     options: ['opus', 'sonnet', 'haiku']
   },
   { key: 'scanDays', label: 'First-pull / fallback window (days)', default: '7', type: 'number' },
+  { key: 'autoPull', label: 'Auto-pull', default: 'off', type: 'select', options: ['off', 'on'] },
+  {
+    key: 'autoPullMinutes',
+    label: 'Auto-pull interval',
+    default: '30',
+    type: 'select',
+    options: ['15', '30', '60', '120', '180']
+  },
   {
     key: 'fontScale',
     label: 'Text size',
@@ -49,6 +57,13 @@ const SPECS: SettingSpec[] = [
 ]
 
 const SCALE_LABELS: Record<string, string> = { s: 'Small', m: 'Medium', l: 'Large' }
+
+/** Friendly labels for select options, keyed by setting key (fallback: raw value). */
+const OPTION_LABELS: Record<string, Record<string, string>> = {
+  fontScale: SCALE_LABELS,
+  autoPull: { off: 'Off', on: 'On' },
+  autoPullMinutes: { '15': '15 min', '30': '30 min', '60': '1 hour', '120': '2 hours', '180': '3 hours' }
+}
 
 /** Human-friendly "N min ago" for the last update check. */
 function lastCheckedLabel(ms: number | null): string {
@@ -120,7 +135,7 @@ export default function Settings(): JSX.Element {
             >
               {s.options!.map((o) => (
                 <option key={o} value={o}>
-                  {s.key === 'fontScale' ? SCALE_LABELS[o] : o}
+                  {OPTION_LABELS[s.key]?.[o] ?? o}
                 </option>
               ))}
             </select>
