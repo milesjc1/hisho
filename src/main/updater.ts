@@ -47,11 +47,15 @@ export function getStatus(): UpdateStatus {
  * fully quit (the window hides to tray on close, so that rarely happens).
  * No-op unless an update is actually downloaded. `setQuitting(true)` first, or
  * the close-to-tray handler swallows the quit and nothing installs.
+ *
+ * quitAndInstall(isSilent=true, isForceRunAfter=true): install silently in the
+ * background and relaunch — no NSIS reinstall wizard. (The default args run the
+ * full assisted installer, since the app is built oneClick:false.)
  */
 export function installNow(): void {
   if (!isInstallable(status)) return
   setQuitting(true)
-  autoUpdater.quitAndInstall()
+  autoUpdater.quitAndInstall(true, true)
 }
 
 /**
