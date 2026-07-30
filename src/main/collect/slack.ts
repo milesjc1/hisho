@@ -130,6 +130,7 @@ export async function collectSlack(days: number, token: string): Promise<Candida
       title: slackTitle(m),
       author: m.username ?? m.user,
       snippet: text ? text.slice(0, 200) : descriptor,
+      body: text || undefined,
       deep_link: m.permalink,
       app_link: `slack://channel?id=${chId}&message=${m.ts}`,
       source_ts: new Date(Number(m.ts) * 1000).toISOString()

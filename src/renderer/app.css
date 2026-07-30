@@ -558,11 +558,46 @@ button.row-title-link:hover {
   font-size: 11px;
   color: var(--muted);
   line-height: 1.35;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+/* ---------- Expandable description ("See more") ---------- */
+
+.card-desc {
+  margin-top: 2px;
+}
+.row-desc {
+  margin-top: 3px;
+}
+.desc-text {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  /* Collapsed: clamp to 2 lines. Expanded: show it all. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.desc-text.expanded {
+  display: block;
+  -webkit-line-clamp: none;
+  overflow: visible;
+}
+.see-more {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent, #0B2A4A);
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.see-more:hover {
+  text-decoration: underline;
 }
 .restore-btn {
   font-size: 11px;

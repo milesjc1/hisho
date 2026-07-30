@@ -1,6 +1,7 @@
 import type { DragEvent } from 'react'
 import type { Item } from '../shared/types'
 import { SOURCE_LABELS, sourceStyle, waitingDays, formatItemTime } from './lib'
+import ExpandableText from './ExpandableText'
 
 const api = window.hisho
 
@@ -15,7 +16,7 @@ interface Props {
 export default function ItemCard({ item, variant, staleDays }: Props): JSX.Element {
   const link = item.app_link ?? item.deep_link
   const style = sourceStyle(item.source)
-  const metaParts = [item.sender, item.snippet].filter(Boolean) as string[]
+  const metaParts = [item.sender].filter(Boolean) as string[]
 
   const days = variant === 'responded' ? waitingDays(item.responded_at) : null
   const stale = staleDays != null && days != null && days >= staleDays
@@ -62,6 +63,8 @@ export default function ItemCard({ item, variant, staleDays }: Props): JSX.Eleme
           <span className={`waiting ${stale ? 'stale' : ''}`}>waiting {days}d</span>
         )}
       </div>
+
+      <ExpandableText className="card-desc" snippet={item.snippet} body={item.body} />
 
       {variant === 'backburner' && (
         <div className="cardbtns">

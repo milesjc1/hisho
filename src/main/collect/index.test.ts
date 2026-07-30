@@ -11,6 +11,15 @@ it('candidateToIngest carries source_ts through to the ingest row', () => {
   expect(row.source_ts).toBe('2026-07-29T14:14:00.000Z')
 })
 
+it('candidateToIngest carries the full body through, defaulting to null', () => {
+  const withBody = candidateToIngest({
+    source: 'slack', external_id: 'C1:1', title: 't', body: 'the full untruncated message'
+  })
+  expect(withBody.body).toBe('the full untruncated message')
+  const without = candidateToIngest({ source: 'slack', external_id: 'C1:2', title: 't' })
+  expect(without.body).toBeNull()
+})
+
 it('candidateToIngest maps author -> sender and defaults missing source_ts to null', () => {
   const row = candidateToIngest({
     source: 'slack',

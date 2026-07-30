@@ -39,6 +39,21 @@ export function waitingDays(respondedAt: number | null): number | null {
   return Math.floor((Date.now() - respondedAt) / 86_400_000)
 }
 
+/** Decide what description text to show and whether a "See more" toggle is
+ * needed. `snippet` is the short preview; `body` is the full text (may be
+ * longer). Collapsed shows the snippet; expanded shows the body. A toggle is
+ * offered only when the body is genuinely longer than the snippet. */
+export function expandableText(
+  snippet: string | null | undefined,
+  body: string | null | undefined,
+  expanded: boolean
+): { text: string; hasMore: boolean } {
+  const full = (body ?? '').trim() || (snippet ?? '').trim()
+  const short = (snippet ?? '').trim() || full
+  const hasMore = full.length > short.length
+  return { text: expanded ? full : short, hasMore }
+}
+
 /** Format a source timestamp (ISO-8601) as a short local "Jul 29, 2:14 PM".
  * Returns null for missing/unparseable input so callers can render nothing. */
 export function formatItemTime(iso: string | null | undefined): string | null {
