@@ -44,6 +44,8 @@ export async function runPull(days: number): Promise<{ ok: boolean; error?: stri
     // 3. Write (app writes; dedup handled by ingest()).
     line('writing to your plate…')
     const inserted = ingest(keep.map(candidateToIngest))
+    const skipped = keep.length - inserted // already in the DB from a prior pull
+    if (skipped > 0) line(`${skipped} already on your plate, skipped`)
     const dismissed = dismiss.length ? dismissEntries(dismiss) : 0
     line(`${inserted} new on your plate, ${dismissed} auto-dismissed`)
 

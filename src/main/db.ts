@@ -25,7 +25,7 @@ export function initDbAt(file: string): void {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       source TEXT NOT NULL, ext_id TEXT, kind TEXT,
       deep_link TEXT, app_link TEXT, title TEXT NOT NULL, sender TEXT, snippet TEXT,
-      state TEXT NOT NULL DEFAULT 'new', status_reason TEXT, responded_at INTEGER,
+      state TEXT NOT NULL DEFAULT 'new', status_reason TEXT, responded_at INTEGER, source_ts TEXT,
       created_at INTEGER NOT NULL, last_touched_at INTEGER NOT NULL,
       UNIQUE(source, ext_id)
     );
@@ -44,6 +44,7 @@ function migrate(): void {
   if (!cols.has('kind')) db.exec(`ALTER TABLE items ADD COLUMN kind TEXT`)
   if (!cols.has('status_reason')) db.exec(`ALTER TABLE items ADD COLUMN status_reason TEXT`)
   if (!cols.has('responded_at')) db.exec(`ALTER TABLE items ADD COLUMN responded_at INTEGER`)
+  if (!cols.has('source_ts')) db.exec(`ALTER TABLE items ADD COLUMN source_ts TEXT`)
   db.exec(`UPDATE items SET state='active' WHERE state='open';`)
   db.exec(`UPDATE items SET state='new' WHERE state='scanned';`)
   if (cols.has('ignore_reason')) {
@@ -89,8 +90,8 @@ export function staleResponded(staleDays: number): Item[] {
 // ---- writes ----
 export function ingest(items: IngestItem[]): number {
   const stmt = db.prepare(`INSERT INTO items
-    (source, ext_id, kind, deep_link, app_link, title, sender, snippet, state, created_at, last_touched_at)
-    VALUES (@source,@ext_id,@kind,@deep_link,@app_link,@title,@sender,@snippet,'new',@ts,@ts)
+    (source, ext_id, kind, deep_link, app_link, title, sender, snippet, source_ts, state, created_at, last_touched_at)
+    VALUES (@source,@ext_id,@kind,@deep_link,@app_link,@title,@sender,@snippet,@source_ts,'new',@ts,@ts)
     ON CONFLICT(source, ext_id) DO NOTHING`)
   let inserted = 0
   const tx = db.transaction((rows: IngestItem[]) => {
@@ -99,7 +100,8 @@ export function ingest(items: IngestItem[]): number {
       const info = stmt.run({
         source: r.source, ext_id: r.external_id, kind: r.kind ?? null,
         deep_link: r.deep_link ?? null, app_link: r.app_link ?? null,
-        title: r.title, sender: r.sender ?? null, snippet: r.snippet ?? null, ts: now()
+        title: r.title, sender: r.sender ?? null, snippet: r.snippet ?? null,
+        source_ts: r.source_ts ?? null, ts: now()
       })
       if (info.changes > 0) inserted++
     }

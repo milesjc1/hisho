@@ -38,3 +38,14 @@ export function waitingDays(respondedAt: number | null): number | null {
   if (!respondedAt) return null
   return Math.floor((Date.now() - respondedAt) / 86_400_000)
 }
+
+/** Format a source timestamp (ISO-8601) as a short local "Jul 29, 2:14 PM".
+ * Returns null for missing/unparseable input so callers can render nothing. */
+export function formatItemTime(iso: string | null | undefined): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleString(undefined, {
+    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+  })
+}
