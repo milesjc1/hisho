@@ -11,34 +11,41 @@ const api = window.hisho
 
 export default function App(): JSX.Element {
   const [view, setView] = useState<View>('board')
-  const [days, setDays] = useState(7)
+  const [mode, setMode] = useState('since')
+  const [lastPullAt, setLastPullAt] = useState<number | null>(null)
   const [scanning, setScanning] = useState(false)
   const [pullError, setPullError] = useState<string | null>(null)
 
+  const refreshLastPull = (): void => {
+    void api.getSetting('lastPullAt').then((v) => setLastPullAt(v != null ? Number(v) : null))
+  }
+
   useEffect(() => {
-    void api.getSetting('scanDays').then((v) => {
-      if (v != null) setDays(Number(v))
+    void api.getSetting('pullMode').then((v) => {
+      if (v != null) setMode(v)
     })
+    refreshLastPull()
     void api.getSetting('fontScale').then((v) => {
       const scale = (v ?? 'm') as FontScale
       api.setZoom(ZOOM_FACTORS[scale] ?? ZOOM_FACTORS.m)
     })
   }, [])
 
-  const changeDays = (d: number): void => {
-    setDays(d)
-    void api.setSetting('scanDays', String(d))
+  const changeMode = (m: string): void => {
+    setMode(m)
+    void api.setSetting('pullMode', m)
   }
 
   const pull = async (): Promise<void> => {
     setScanning(true)
     setPullError(null)
     try {
-      const res = await api.pull(days)
+      const res = await api.pull(mode)
       if (!res.ok) {
         setPullError(res.error ?? 'Scan failed')
         setTimeout(() => setPullError(null), 6000)
       }
+      refreshLastPull() // main advanced lastPullAt on success
     } finally {
       setScanning(false)
     }
@@ -49,8 +56,9 @@ export default function App(): JSX.Element {
       <Sidebar
         view={view}
         onNavigate={setView}
-        days={days}
-        onChangeDays={changeDays}
+        mode={mode}
+        onChangeMode={changeMode}
+        lastPullAt={lastPullAt}
         scanning={scanning}
         onPull={() => void pull()}
         pullError={pullError}

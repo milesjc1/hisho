@@ -1,5 +1,12 @@
 import { it, expect } from 'vitest'
-import { formatItemTime, expandableText } from './lib'
+import { formatItemTime, expandableText, formatStamp } from './lib'
+
+it('formatStamp renders a full local date-time for valid ms, null otherwise', () => {
+  expect(formatStamp(null)).toBeNull()
+  const out = formatStamp(Date.parse('2026-07-30T14:14:07.000Z'))
+  expect(out).not.toBeNull()
+  expect(out).toMatch(/\d{1,2}:\d{2}/) // has a clock time
+})
 
 it('expandableText shows snippet with no toggle when there is no fuller body', () => {
   expect(expandableText('hello', null, false)).toEqual({ text: 'hello', hasMore: false })

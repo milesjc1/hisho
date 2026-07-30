@@ -59,7 +59,7 @@ export function registerIpc(): void {
   })
 
   // ---------- scan + settings ----------
-  ipcMain.handle('pull:run', (_e, days: number) => runPull(days))
+  ipcMain.handle('pull:run', (_e, mode: string) => runPull(mode))
   ipcMain.handle('settings:get', (_e, key: string) => getSetting(key) ?? null)
   ipcMain.handle('settings:set', (_e, key: string, value: string) => setSetting(key, value))
 

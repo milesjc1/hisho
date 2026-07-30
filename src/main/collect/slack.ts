@@ -94,6 +94,12 @@ export function blockText(match: SlackMatch): string {
     .trim()
 }
 
+/** Day-floor (UTC) of the cutoff, for the date-only Slack `after:` modifier. Precise
+ * sub-day filtering is done afterward against each match's exact `ts`. */
+export function slackAfterDate(sinceMs: number): string {
+  return new Date(sinceMs).toISOString().slice(0, 10) // YYYY-MM-DD
+}
+
 /** Hard cap on pages fetched (100/page) so a busy window can't hang the pull. */
 const MAX_PAGES = 20
 
@@ -103,10 +109,13 @@ const MAX_PAGES = 20
  * Everything to me is kept — human DMs and bot notifications (Linear, microslack)
  * alike; bot content is pulled out of Block Kit blocks by blockText(). Only my own
  * authored messages are dropped. All pages in the window are fetched.
+ *
+ * `sinceMs` is the exact cutoff: the query uses its day-floor (Slack's `after:` is
+ * date-only), then matches older than `sinceMs` are dropped for true "since <instant>".
  */
-export async function collectSlack(days: number, token: string): Promise<Candidate[]> {
+export async function collectSlack(sinceMs: number, token: string): Promise<Candidate[]> {
   const me = (await slack('auth.test', token, {})) as { user_id: string; team_id?: string }
-  const after = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10) // YYYY-MM-DD
+  const after = slackAfterDate(sinceMs)
 
   const matches: SlackMatch[] = []
   for (let page = 1; page <= MAX_PAGES; page++) {
@@ -126,6 +135,7 @@ export async function collectSlack(days: number, token: string): Promise<Candida
   const seen = new Set<string>()
   for (const m of matches) {
     if (m.user === me.user_id) continue // my own message
+    if (Number(m.ts) * 1000 < sinceMs) continue // older than the exact cutoff (day-query is wider)
     const chId = m.channel?.id ?? 'dm'
     const extId = `${chId}:${m.ts}`
     if (seen.has(extId)) continue

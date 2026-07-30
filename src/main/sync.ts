@@ -1,8 +1,9 @@
 import { emitToRenderer, setBadgeCount, showAndFocus } from './window'
 import { notify } from './notify'
-import { ingest, dismissEntries, newCount, getSetting } from './db'
+import { ingest, dismissEntries, newCount, getSetting, setSetting } from './db'
 import { collectAll, candidateToIngest } from './collect'
 import { filterIgnored } from './collect/ignore'
+import { resolvePullSince } from './pull-window'
 import { triage } from './triage'
 import type { PullEvent } from '../shared/types'
 
@@ -20,15 +21,24 @@ function line(text: string): void {
  * LLM triages the candidate pool (noise vs keep), and the app writes directly
  * to the DB. The LLM never touches the network or the DB. Dedup is automatic —
  * ingest() skips anything already stored (including resolved items).
+ *
+ * `mode` selects the window: 'since' (default — everything since the last successful
+ * pull) or a fixed day count ('1'/'7'/'30'). The pull's start time is stamped as
+ * `lastPullAt` only on success, so a failed pull never advances the cutoff.
  */
-export async function runPull(days: number): Promise<{ ok: boolean; error?: string }> {
+export async function runPull(mode: string): Promise<{ ok: boolean; error?: string }> {
   if (running) return { ok: false, error: 'already running' }
   running = true
   emitPull({ type: 'start' })
 
+  const startedAt = Date.now()
   try {
-    // 1. Collect (deterministic, parallel, no LLM).
-    const { candidates, results } = await collectAll(days)
+    // 1. Collect (deterministic, parallel, no LLM). Resolve the cutoff from the mode.
+    const lastPullAt = Number(getSetting('lastPullAt')) || null
+    const firstRunDays = Number(getSetting('scanDays')) || 7
+    const since = resolvePullSince(mode, lastPullAt, startedAt, firstRunDays)
+    line(`pulling since ${new Date(since).toLocaleString()}${mode === 'since' ? '' : ` (last ${mode}d)`}`)
+    const { candidates, results } = await collectAll(since)
     for (const r of results) {
       if (r.error) line(`${r.source}: ${r.candidates.length} found (note: ${r.error})`)
       else line(`${r.source}: ${r.candidates.length} found`)
@@ -61,6 +71,9 @@ export async function runPull(days: number): Promise<{ ok: boolean; error?: stri
     }
     const dismissed = dismiss.length ? dismissEntries(dismiss) : 0
     line(`${inserted} new on your plate, ${dismissed} auto-dismissed`)
+
+    // Advance the incremental cutoff — start time, so nothing that arrived mid-pull is missed.
+    setSetting('lastPullAt', String(startedAt))
 
     setBadgeCount(newCount())
     emitToRenderer('items:changed')

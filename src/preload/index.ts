@@ -13,8 +13,8 @@ const api = {
   addManual: (title: string): Promise<number> => ipcRenderer.invoke('item:addManual', title),
   restore: (id: number): Promise<void> => ipcRenderer.invoke('item:restore', id),
   openLink: (url: string): Promise<void> => ipcRenderer.invoke('shell:open', url),
-  pull: (days: number): Promise<{ ok: boolean; error?: string }> =>
-    ipcRenderer.invoke('pull:run', days),
+  pull: (mode: string): Promise<{ ok: boolean; error?: string }> =>
+    ipcRenderer.invoke('pull:run', mode),
   getSetting: (k: string): Promise<string | null> => ipcRenderer.invoke('settings:get', k),
   setSetting: (k: string, v: string): Promise<void> => ipcRenderer.invoke('settings:set', k, v),
   setZoom: (factor: number): void => {
