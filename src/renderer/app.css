@@ -512,12 +512,39 @@ button.title-link:hover {
 .list-row .row-x {
   flex-shrink: 0;
 }
+.list-row .row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.list-row .row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .list-row .row-title {
   font-size: 13px;
   font-weight: 500;
   color: #9a9a9a;
   flex: 1;
+  min-width: 0;
   line-height: 1.3;
+}
+/* Clickable title in list rows: strip button chrome, keep row-title look. */
+button.row-title-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+button.row-title-link:hover {
+  color: var(--accent, #0B2A4A);
+  text-decoration: underline;
 }
 .list-row.dimmed .row-title {
   color: var(--muted);
@@ -525,6 +552,17 @@ button.title-link:hover {
 .list-row .row-reason {
   font-size: 11px;
   color: var(--muted);
+  flex-shrink: 0;
+}
+.list-row .row-sub {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .restore-btn {
   font-size: 11px;
