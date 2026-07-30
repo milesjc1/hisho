@@ -26,7 +26,10 @@ function line(text: string): void {
  * pull) or a fixed day count ('1'/'7'/'30'). The pull's start time is stamped as
  * `lastPullAt` only on success, so a failed pull never advances the cutoff.
  */
-export async function runPull(mode: string): Promise<{ ok: boolean; error?: string }> {
+export async function runPull(
+  mode: string,
+  opts?: { background?: boolean }
+): Promise<{ ok: boolean; error?: string }> {
   if (running) return { ok: false, error: 'already running' }
   running = true
   emitPull({ type: 'start' })
@@ -81,7 +84,7 @@ export async function runPull(mode: string): Promise<{ ok: boolean; error?: stri
 
     if (inserted > 0) {
       notify(`${inserted} on your plate`, 'Hisho pulled new items.')
-      showAndFocus()
+      if (!opts?.background) showAndFocus() // background (auto-pull) never steals focus
     }
     return { ok: true }
   } catch (e) {

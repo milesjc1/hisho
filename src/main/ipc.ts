@@ -13,6 +13,7 @@ import {
   setSetting
 } from './db'
 import { runPull } from './sync'
+import { rescheduleAutoPull } from './auto-pull'
 import { checkNow, getStatus, installNow } from './updater'
 import { emitToRenderer, setBadgeCount } from './window'
 import type { ItemState } from '../shared/types'
@@ -61,7 +62,11 @@ export function registerIpc(): void {
   // ---------- scan + settings ----------
   ipcMain.handle('pull:run', (_e, mode: string) => runPull(mode))
   ipcMain.handle('settings:get', (_e, key: string) => getSetting(key) ?? null)
-  ipcMain.handle('settings:set', (_e, key: string, value: string) => setSetting(key, value))
+  ipcMain.handle('settings:set', (_e, key: string, value: string) => {
+    setSetting(key, value)
+    // Re-arm the auto-pull timer live when its settings change.
+    if (key === 'autoPull' || key === 'autoPullMinutes') rescheduleAutoPull()
+  })
 
   // ---------- updates ----------
   ipcMain.handle('update:check', () => checkNow())
