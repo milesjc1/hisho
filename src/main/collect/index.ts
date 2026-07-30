@@ -14,6 +14,7 @@ export function candidateToIngest(c: Candidate): IngestItem {
     title: c.title,
     sender: c.author ?? c.sender ?? null,
     snippet: c.snippet ?? null,
+    body: c.body ?? null,
     deep_link: c.deep_link ?? null,
     app_link: c.app_link ?? null,
     source_ts: c.source_ts ?? null

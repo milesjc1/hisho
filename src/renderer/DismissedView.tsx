@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Item } from '../shared/types'
 import { SOURCE_LABELS, sourceStyle, formatItemTime } from './lib'
+import ExpandableText from './ExpandableText'
 
 const api = window.hisho
 
@@ -23,7 +24,7 @@ export default function DismissedView(): JSX.Element {
         const style = sourceStyle(i.source)
         const link = i.app_link ?? i.deep_link
         const time = formatItemTime(i.source_ts)
-        const sub = [time, i.snippet].filter(Boolean).join(' · ')
+        const sub = [time, i.sender].filter(Boolean).join(' · ')
         return (
           <div className="list-row dimmed" key={i.id}>
             <svg className="row-x" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -46,6 +47,7 @@ export default function DismissedView(): JSX.Element {
                 </span>
               </div>
               {sub && <div className="row-sub">{sub}</div>}
+              <ExpandableText className="row-desc" snippet={i.snippet} body={i.body} />
             </div>
             <button className="restore-btn" onClick={() => void api.restore(i.id)}>
               Restore

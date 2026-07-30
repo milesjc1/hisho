@@ -64,6 +64,8 @@ export interface Item {
   title: string
   sender: string | null
   snippet: string | null
+  /** Full untruncated text for the "see more" expansion (snippet is the preview). */
+  body: string | null
   state: ItemState
   status_reason: string | null
   responded_at: number | null
@@ -81,6 +83,8 @@ export interface IngestItem {
   title: string
   sender?: string | null
   snippet?: string | null
+  /** Full untruncated text; snippet is a short preview of it. */
+  body?: string | null
   deep_link?: string | null
   app_link?: string | null
   /** ISO-8601 timestamp of the underlying message/activity. */

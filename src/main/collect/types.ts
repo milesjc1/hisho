@@ -11,6 +11,7 @@ export interface Candidate extends IngestItem {
   /** Display name of the person who created/sent the item (→ IngestItem.sender). */
   author?: string
 }
+// `body` (full untruncated text) is inherited from IngestItem.
 
 /** Outcome of one collector. Failures are isolated; one dead source never blocks the rest. */
 export interface SourceResult {
