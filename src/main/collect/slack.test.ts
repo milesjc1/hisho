@@ -1,5 +1,15 @@
 import { it, expect } from 'vitest'
-import { blockText, slackTitle, slackDescriptor } from './slack'
+import { blockText, slackTitle, slackDescriptor, slackAppLink } from './slack'
+
+it('slackAppLink builds a team-scoped deep link that jumps to the exact message', () => {
+  expect(slackAppLink('T079URTDHBP', 'D0BL9A4M1C3', '1785429625.774749')).toBe(
+    'slack://channel?team=T079URTDHBP&id=D0BL9A4M1C3&message=1785429625.774749'
+  )
+})
+
+it('slackAppLink omits team when unknown (still targets the channel + message)', () => {
+  expect(slackAppLink(undefined, 'C123', '1.2')).toBe('slack://channel?id=C123&message=1.2')
+})
 
 it('slackTitle names the human or bot sender', () => {
   expect(slackTitle({ username: 'kris.johnson' })).toBe('Message from kris.johnson')
