@@ -59,7 +59,8 @@
   "dependencies": {
     "better-sqlite3": "^11.8.1",
     "cron-parser": "^4.9.0",
-    "electron-updater": "^6.8.9"
+    "electron-updater": "^6.8.9",
+    "node-emoji": "^2.2.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
