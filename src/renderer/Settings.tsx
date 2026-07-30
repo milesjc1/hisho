@@ -24,7 +24,7 @@ const SPECS: SettingSpec[] = [
     type: 'select',
     options: ['opus', 'sonnet', 'haiku']
   },
-  { key: 'scanDays', label: 'Scan window (days)', default: '7', type: 'number' },
+  { key: 'scanDays', label: 'First-pull / fallback window (days)', default: '7', type: 'number' },
   {
     key: 'fontScale',
     label: 'Text size',

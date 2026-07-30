@@ -33,11 +33,11 @@ export interface CollectResult {
  * (Teams/Outlook/GitHub/Linear) reach the feed via the plate-write CLI, not
  * this in-app pull.
  */
-export async function collectAll(days: number): Promise<CollectResult> {
+export async function collectAll(sinceMs: number): Promise<CollectResult> {
   const s = loadSecrets()
 
   const result = s.slackUserToken
-    ? await wrap('slack', () => collectSlack(days, s.slackUserToken!))
+    ? await wrap('slack', () => collectSlack(sinceMs, s.slackUserToken!))
     : { source: 'slack' as const, candidates: [], error: 'no slackUserToken' }
 
   return { candidates: result.candidates, results: [result] }

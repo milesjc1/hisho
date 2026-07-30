@@ -191,6 +191,13 @@
   outline: none;
   margin-bottom: 8px;
 }
+.scan-since {
+  display: block;
+  font-size: 10.5px;
+  color: var(--faint);
+  margin: -3px 0 8px;
+  line-height: 1.3;
+}
 .pull-btn {
   width: 100%;
   display: flex;

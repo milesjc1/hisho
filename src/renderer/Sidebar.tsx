@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import logo from './assets/hisho.png'
+import { formatStamp } from './lib'
 
 const api = window.hisho
 
@@ -9,14 +10,20 @@ export type View = 'board' | 'done' | 'dismissed' | 'settings'
 interface Props {
   view: View
   onNavigate: (v: View) => void
-  days: number
-  onChangeDays: (d: number) => void
+  mode: string
+  onChangeMode: (m: string) => void
+  lastPullAt: number | null
   scanning: boolean
   onPull: () => void
   pullError: string | null
 }
 
-const DAY_OPTIONS = [1, 3, 7]
+const WINDOW_OPTIONS = [
+  { v: 'since', label: 'Since last pull' },
+  { v: '1', label: 'Last 1 day' },
+  { v: '7', label: 'Last 7 days' },
+  { v: '30', label: 'Last 30 days' }
+]
 
 const IconGrid = (): JSX.Element => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -54,8 +61,9 @@ const NAV: { id: View; label: string; icon: () => JSX.Element }[] = [
 export default function Sidebar({
   view,
   onNavigate,
-  days,
-  onChangeDays,
+  mode,
+  onChangeMode,
+  lastPullAt,
   scanning,
   onPull,
   pullError
@@ -63,6 +71,11 @@ export default function Sidebar({
   const [counts, setCounts] = useState({ board: 0, done: 0, dismissed: 0 })
   const [showAdd, setShowAdd] = useState(false)
   const [title, setTitle] = useState('')
+  const [scanDays, setScanDays] = useState('7')
+
+  useEffect(() => {
+    void api.getSetting('scanDays').then((v) => { if (v != null) setScanDays(v) })
+  }, [])
 
   const loadCounts = (): void => {
     void Promise.all([api.center(), api.done(), api.dismissed()]).then(([c, d, x]) => {
@@ -150,13 +163,18 @@ export default function Sidebar({
 
       <div className="scan">
         <label className="scan-label">Scan window</label>
-        <select className="scan-select" value={days} onChange={(e) => onChangeDays(Number(e.target.value))}>
-          {DAY_OPTIONS.map((d) => (
-            <option key={d} value={d}>
-              Last {d} {d === 1 ? 'day' : 'days'}
+        <select className="scan-select" value={mode} onChange={(e) => onChangeMode(e.target.value)}>
+          {WINDOW_OPTIONS.map((o) => (
+            <option key={o.v} value={o.v}>
+              {o.label}
             </option>
           ))}
         </select>
+        {mode === 'since' && (
+          <span className="scan-since">
+            {lastPullAt ? `Since ${formatStamp(lastPullAt)}` : `First pull — last ${scanDays} days`}
+          </span>
+        )}
         <button className="pull-btn" onClick={onPull} disabled={scanning}>
           <svg
             className={scanning ? 'spinning' : ''}

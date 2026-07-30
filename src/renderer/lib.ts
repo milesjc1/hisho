@@ -39,6 +39,18 @@ export function waitingDays(respondedAt: number | null): number | null {
   return Math.floor((Date.now() - respondedAt) / 86_400_000)
 }
 
+/** Full local date-time (incl. seconds) for the "since last pull" label, e.g.
+ * "07/30/26, 2:14:07 PM". Null-safe — returns null for null/invalid input. */
+export function formatStamp(ms: number | null | undefined): string | null {
+  if (ms == null) return null
+  const d = new Date(ms)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleString(undefined, {
+    year: '2-digit', month: '2-digit', day: '2-digit',
+    hour: 'numeric', minute: '2-digit', second: '2-digit'
+  })
+}
+
 /** Decide what description text to show and whether a "See more" toggle is
  * needed. `snippet` is the short preview; `body` is the full text (may be
  * longer). Collapsed shows the snippet; expanded shows the body. A toggle is
