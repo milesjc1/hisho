@@ -1,9 +1,9 @@
 import { it, expect } from 'vitest'
 import { blockText, slackTitle, slackDescriptor, slackAppLink, slackAfterDate } from './slack'
 
-it('slackAfterDate returns the UTC day-floor (YYYY-MM-DD) of the cutoff', () => {
-  expect(slackAfterDate(Date.parse('2026-07-30T12:34:56.000Z'))).toBe('2026-07-30')
-  expect(slackAfterDate(Date.parse('2026-01-05T00:00:00.000Z'))).toBe('2026-01-05')
+it('slackAfterDate returns the day before the cutoff (UTC) so Slack exclusive after: includes today', () => {
+  expect(slackAfterDate(Date.parse('2026-07-30T12:34:56.000Z'))).toBe('2026-07-29')
+  expect(slackAfterDate(Date.parse('2026-01-05T00:00:00.000Z'))).toBe('2026-01-04')
 })
 
 it('slackAppLink builds a team-scoped deep link that jumps to the exact message', () => {

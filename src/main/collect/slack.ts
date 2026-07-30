@@ -94,10 +94,12 @@ export function blockText(match: SlackMatch): string {
     .trim()
 }
 
-/** Day-floor (UTC) of the cutoff, for the date-only Slack `after:` modifier. Precise
- * sub-day filtering is done afterward against each match's exact `ts`. */
+/** One day before the cutoff (UTC), for the date-only Slack `after:` modifier.
+ * Slack's `after:` is exclusive, so using today's date would miss today's messages.
+ * Subtracting one day makes the search inclusive of the cutoff day; the exact `ts`
+ * filter below drops anything truly before `sinceMs`. */
 export function slackAfterDate(sinceMs: number): string {
-  return new Date(sinceMs).toISOString().slice(0, 10) // YYYY-MM-DD
+  return new Date(sinceMs - 86_400_000).toISOString().slice(0, 10) // YYYY-MM-DD, day before
 }
 
 /** Hard cap on pages fetched (100/page) so a busy window can't hang the pull. */
