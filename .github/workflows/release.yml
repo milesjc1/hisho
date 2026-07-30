@@ -1,0 +1,36 @@
+name: release
+
+# Cut a release by pushing a version tag. `npm version patch` bumps
+# package.json and creates the matching `vX.Y.Z` tag; `git push --follow-tags`
+# fires this workflow, which builds the Windows installer and publishes it to a
+# GitHub Release. Installed apps auto-update from that release.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # electron-builder needs to create the GitHub Release
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # better-sqlite3 must be compiled for Electron's ABI, not the host node.
+      # (package.json sets npmRebuild:false so electron-builder won't do it.)
+      - run: npm run rebuild
+
+      # electron-vite build && electron-builder --win --publish always.
+      # electron-builder reads GH_TOKEN to create/upload the release.
+      - run: npm run release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
