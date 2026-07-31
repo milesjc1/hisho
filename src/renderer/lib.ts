@@ -1,4 +1,16 @@
-import type { ItemSource } from '../shared/types'
+import type { Item, ItemSource } from '../shared/types'
+
+/** Case-insensitive substring search over an item's text fields. Empty query
+ * matches everything. Used to filter the Board / Done / Dismissed views. */
+export function matchesQuery(item: Item, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  const hay = [item.title, item.sender, item.snippet, item.body, item.kind, item.status_reason]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+  return hay.includes(q)
+}
 
 export interface SourceStyle {
   color: string

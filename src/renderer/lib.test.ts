@@ -1,5 +1,35 @@
 import { it, expect } from 'vitest'
-import { formatItemTime, expandableText, formatStamp } from './lib'
+import { formatItemTime, expandableText, formatStamp, matchesQuery } from './lib'
+import type { Item } from '../shared/types'
+
+const item = (o: Partial<Item>): Item => ({
+  id: 1, source: 'slack', ext_id: null, kind: null, deep_link: null, app_link: null,
+  title: '', sender: null, snippet: null, body: null, state: 'new', status_reason: null,
+  responded_at: null, source_ts: null, created_at: 0, last_touched_at: 0, ...o
+})
+
+it('matchesQuery returns true for an empty or whitespace query', () => {
+  expect(matchesQuery(item({ title: 'anything' }), '')).toBe(true)
+  expect(matchesQuery(item({ title: 'anything' }), '   ')).toBe(true)
+})
+
+it('matchesQuery matches title case-insensitively', () => {
+  expect(matchesQuery(item({ title: 'Message from Ian' }), 'ian')).toBe(true)
+  expect(matchesQuery(item({ title: 'Message from Ian' }), 'IAN')).toBe(true)
+  expect(matchesQuery(item({ title: 'Message from Ian' }), 'bob')).toBe(false)
+})
+
+it('matchesQuery searches sender, snippet, body, kind, and status_reason', () => {
+  expect(matchesQuery(item({ sender: 'kris.johnson' }), 'kris')).toBe(true)
+  expect(matchesQuery(item({ snippet: 'planning meeting' }), 'meeting')).toBe(true)
+  expect(matchesQuery(item({ body: 'the full untruncated text' }), 'untruncated')).toBe(true)
+  expect(matchesQuery(item({ kind: '#planning' }), 'planning')).toBe(true)
+  expect(matchesQuery(item({ status_reason: 'ignore rule' }), 'ignore')).toBe(true)
+})
+
+it('matchesQuery does not throw on null fields and returns false when nothing matches', () => {
+  expect(matchesQuery(item({ title: 'hello' }), 'zzz')).toBe(false)
+})
 
 it('formatStamp renders a full local date-time for valid ms, null otherwise', () => {
   expect(formatStamp(null)).toBeNull()
