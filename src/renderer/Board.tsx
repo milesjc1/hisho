@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Item } from '../shared/types'
 import Panel from './Panel'
 import ItemCard from './ItemCard'
+import { matchesQuery } from './lib'
 
 const api = window.hisho
 
@@ -23,7 +24,7 @@ const IconResponded = (): JSX.Element => (
   </svg>
 )
 
-export default function Board(): JSX.Element {
+export default function Board({ query }: { query: string }): JSX.Element {
   const [center, setCenter] = useState<Item[]>([])
   const [back, setBack] = useState<Item[]>([])
   const [resp, setResp] = useState<Item[]>([])
@@ -45,19 +46,22 @@ export default function Board(): JSX.Element {
     return api.onItemsChanged(load)
   }, [])
 
-  const newItems = center.filter((i) => i.state === 'new')
-  const activeItems = center.filter((i) => i.state !== 'new')
+  const fBack = back.filter((i) => matchesQuery(i, query))
+  const fCenter = center.filter((i) => matchesQuery(i, query))
+  const fResp = resp.filter((i) => matchesQuery(i, query))
+  const newItems = fCenter.filter((i) => i.state === 'new')
+  const activeItems = fCenter.filter((i) => i.state !== 'new')
 
   return (
     <div className="board">
-      <Panel title="Backburner" count={back.length} state="backburner" icon={<IconBackburner />}>
-        {back.length === 0 && <div className="panel-empty">Nothing parked</div>}
-        {back.map((i) => (
+      <Panel title="Backburner" count={fBack.length} state="backburner" icon={<IconBackburner />}>
+        {fBack.length === 0 && <div className="panel-empty">Nothing parked</div>}
+        {fBack.map((i) => (
           <ItemCard key={i.id} item={i} variant="backburner" />
         ))}
       </Panel>
 
-      <Panel title="Active" count={center.length} state="active" icon={<IconActive />} accent>
+      <Panel title="Active" count={fCenter.length} state="active" icon={<IconActive />} accent>
         {newItems.length > 0 && (
           <div className="section-label">
             Needs triage
@@ -74,12 +78,12 @@ export default function Board(): JSX.Element {
           <ItemCard key={i.id} item={i} variant="active" />
         ))}
 
-        {center.length === 0 && <div className="panel-empty">All clear</div>}
+        {fCenter.length === 0 && <div className="panel-empty">All clear</div>}
       </Panel>
 
-      <Panel title="Responded" count={resp.length} state="responded" icon={<IconResponded />}>
-        {resp.length === 0 && <div className="panel-empty">Nothing pending</div>}
-        {resp.map((i) => (
+      <Panel title="Responded" count={fResp.length} state="responded" icon={<IconResponded />}>
+        {fResp.length === 0 && <div className="panel-empty">Nothing pending</div>}
+        {fResp.map((i) => (
           <ItemCard key={i.id} item={i} variant="responded" staleDays={staleDays} />
         ))}
       </Panel>

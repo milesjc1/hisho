@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { Item } from '../shared/types'
-import { SOURCE_LABELS, sourceStyle, formatItemTime } from './lib'
+import { SOURCE_LABELS, sourceStyle, formatItemTime, matchesQuery } from './lib'
 import ExpandableText from './ExpandableText'
 
 const api = window.hisho
 
-export default function DismissedView(): JSX.Element {
+export default function DismissedView({ query }: { query: string }): JSX.Element {
   const [items, setItems] = useState<Item[]>([])
 
   const load = (): void => {
@@ -17,10 +17,14 @@ export default function DismissedView(): JSX.Element {
     return api.onItemsChanged(load)
   }, [])
 
+  const filtered = items.filter((i) => matchesQuery(i, query))
+
   return (
     <div className="list-view">
-      {items.length === 0 && <div className="list-empty">Nothing dismissed.</div>}
-      {items.map((i) => {
+      {filtered.length === 0 && (
+        <div className="list-empty">{query.trim() ? 'No matches.' : 'Nothing dismissed.'}</div>
+      )}
+      {filtered.map((i) => {
         const style = sourceStyle(i.source)
         const link = i.app_link ?? i.deep_link
         const time = formatItemTime(i.source_ts)

@@ -15,6 +15,7 @@ export default function App(): JSX.Element {
   const [lastPullAt, setLastPullAt] = useState<number | null>(null)
   const [scanning, setScanning] = useState(false)
   const [pullError, setPullError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
 
   const refreshLastPull = (): void => {
     void api.getSetting('lastPullAt').then((v) => setLastPullAt(v != null ? Number(v) : null))
@@ -65,9 +66,26 @@ export default function App(): JSX.Element {
       />
 
       <div className="main">
-        {view === 'board' && <Board />}
-        {view === 'done' && <DoneView />}
-        {view === 'dismissed' && <DismissedView />}
+        {view !== 'settings' && (
+          <div className="search-bar">
+            <input
+              className="search-input"
+              type="text"
+              placeholder="Search your plate…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button className="search-clear" title="Clear" onClick={() => setQuery('')}>
+                ×
+              </button>
+            )}
+          </div>
+        )}
+
+        {view === 'board' && <Board query={query} />}
+        {view === 'done' && <DoneView query={query} />}
+        {view === 'dismissed' && <DismissedView query={query} />}
         {view === 'settings' && <Settings />}
 
         <PullLog />
