@@ -216,7 +216,7 @@
 
 /* Inline add-task in the Active panel header */
 .panel-action {
-  margin-left: 6px;
+  margin-left: auto;
   display: flex;
   align-items: center;
 }
@@ -508,7 +508,6 @@
   letter-spacing: 0.08em;
 }
 .panel-count {
-  margin-left: auto;
   font-size: 11px;
   font-weight: 600;
   color: var(--faint);
