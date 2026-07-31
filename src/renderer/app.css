@@ -2,12 +2,13 @@
 
 .app {
   display: flex;
+  flex-direction: column;
   height: 100%;
   background: var(--bg);
   overflow: hidden;
 }
 
-.main {
+.content {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -15,13 +16,163 @@
   min-width: 0;
 }
 
-/* ---------- Search bar (Board / Done / Dismissed) ---------- */
+/* ---------- Header: brand+menu | centered search | pull ---------- */
+/* Same grid template as .board so the search aligns to the Active column. */
+
+.header {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.header-center {
+  min-width: 0;
+}
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 0;
+}
+
+.header .brand-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+.header .brand-name {
+  font-size: 14px;
+  font-weight: 800;
+}
+.brand-view {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--faint);
+  padding-left: 9px;
+  border-left: 1px solid var(--line);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hamburger + dropdown menu */
+.hamburger-wrap {
+  position: relative;
+}
+.hamburger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.hamburger:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg);
+}
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.menu {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 50;
+  min-width: 180px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+}
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+}
+.menu-item.active {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--fg);
+}
+.menu-label {
+  flex: 1;
+}
+.menu-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--faint);
+}
+
+/* Pull controls (right cell) */
+.pull-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.header .scan-select {
+  width: auto;
+  min-width: 128px;
+  margin: 0;
+}
+.header .pull-btn {
+  width: auto;
+  padding: 7px 14px;
+}
+.pull-hint {
+  font-size: 10px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.pull-hint .pull-error {
+  margin: 0;
+  color: var(--red);
+}
+
+/* ---------- Search bar (header center) ---------- */
 
 .search-bar {
   position: relative;
-  flex-shrink: 0;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--line-soft);
+  width: 100%;
 }
 .search-input {
   width: 100%;
@@ -41,7 +192,7 @@
 }
 .search-clear {
   position: absolute;
-  right: 24px;
+  right: 6px;
   top: 50%;
   transform: translateY(-50%);
   border: none;
@@ -54,6 +205,27 @@
 }
 .search-clear:hover {
   color: var(--fg);
+}
+
+/* Add-task button in the Active panel header */
+.add-task-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.add-task-btn:hover {
+  color: var(--fg);
+  background: rgba(255, 255, 255, 0.1);
+}
+.panel-action {
+  margin-left: 6px;
+  display: flex;
+  align-items: center;
 }
 
 /* ---------- Sidebar ---------- */

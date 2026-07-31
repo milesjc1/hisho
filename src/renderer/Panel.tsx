@@ -9,10 +9,11 @@ interface Props {
   state: ItemState
   icon: ReactNode
   accent?: boolean
+  action?: ReactNode
   children: ReactNode
 }
 
-export default function Panel({ title, count, state, icon, accent, children }: Props): JSX.Element {
+export default function Panel({ title, count, state, icon, accent, action, children }: Props): JSX.Element {
   const onDragOver = (e: DragEvent<HTMLDivElement>): void => {
     e.preventDefault()
     e.currentTarget.classList.add('drop-hover')
@@ -38,6 +39,7 @@ export default function Panel({ title, count, state, icon, accent, children }: P
         <span className="panel-icon">{icon}</span>
         <span className="panel-title">{title}</span>
         <span className="panel-count">{count}</span>
+        {action && <span className="panel-action">{action}</span>}
       </div>
       <div className="panel-body">{children}</div>
     </div>

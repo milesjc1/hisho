@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Item } from '../shared/types'
+import type { KeyboardEvent } from 'react'
 import Panel from './Panel'
 import ItemCard from './ItemCard'
 import { matchesQuery } from './lib'
@@ -29,6 +30,20 @@ export default function Board({ query }: { query: string }): JSX.Element {
   const [back, setBack] = useState<Item[]>([])
   const [resp, setResp] = useState<Item[]>([])
   const [staleDays, setStaleDays] = useState(3)
+  const [showAdd, setShowAdd] = useState(false)
+  const [addTitle, setAddTitle] = useState('')
+
+  const submitAdd = async (): Promise<void> => {
+    const t = addTitle.trim()
+    if (!t) return
+    await api.addManual(t)
+    setAddTitle('')
+    setShowAdd(false)
+  }
+  const onAddKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter') void submitAdd()
+    if (e.key === 'Escape') setShowAdd(false)
+  }
 
   const load = (): void => {
     void Promise.all([api.center(), api.backburner(), api.responded()]).then(([c, b, r]) => {
@@ -61,7 +76,35 @@ export default function Board({ query }: { query: string }): JSX.Element {
         ))}
       </Panel>
 
-      <Panel title="Active" count={fCenter.length} state="active" icon={<IconActive />} accent>
+      <Panel
+        title="Active"
+        count={fCenter.length}
+        state="active"
+        icon={<IconActive />}
+        accent
+        action={
+          <button className="add-task-btn" title="Add task" onClick={() => setShowAdd((v) => !v)}>
+            + Add
+          </button>
+        }
+      >
+        {showAdd && (
+          <div className="add-form">
+            <input
+              className="add-input"
+              type="text"
+              placeholder="Task title…"
+              value={addTitle}
+              onChange={(e) => setAddTitle(e.target.value)}
+              onKeyDown={onAddKeyDown}
+              autoFocus
+            />
+            <div className="add-row">
+              <button className="add-submit" onClick={() => void submitAdd()}>Add</button>
+              <button className="add-cancel" onClick={() => setShowAdd(false)}>✕</button>
+            </div>
+          </div>
+        )}
         {newItems.length > 0 && (
           <div className="section-label">
             Needs triage

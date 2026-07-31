@@ -25,14 +25,14 @@ it('slackAppLink omits team when unknown (still targets the channel + message)',
   expect(slackAppLink(undefined, 'C123', '1.2')).toBe('slack://channel?id=C123&message=1.2')
 })
 
-it('slackTitle names the human or bot sender', () => {
-  expect(slackTitle({ username: 'kris.johnson' })).toBe('Message from kris.johnson')
-  expect(slackTitle({ username: 'linear' })).toBe('Message from linear')
+it('slackTitle is just the human or bot sender name', () => {
+  expect(slackTitle({ username: 'kris.johnson' })).toBe('kris.johnson')
+  expect(slackTitle({ username: 'linear' })).toBe('linear')
 })
 
 it('slackTitle falls back to user id, then a generic name', () => {
-  expect(slackTitle({ user: 'U07B9RCRUMU' })).toBe('Message from U07B9RCRUMU')
-  expect(slackTitle({})).toBe('Message from someone')
+  expect(slackTitle({ user: 'U07B9RCRUMU' })).toBe('U07B9RCRUMU')
+  expect(slackTitle({})).toBe('someone')
 })
 
 it('slackDescriptor labels DM / group chat / channel', () => {
