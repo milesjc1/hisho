@@ -876,8 +876,34 @@ button.row-title-link:hover {
   flex: 1;
   padding: 24px;
   overflow: auto;
-  max-width: 500px;
+  gap: 12px;
+}
+/* Centered, up to two columns wide when the window permits. */
+.settings-grid {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.settings-field.wide {
+  grid-column: 1 / -1;
+}
+@media (max-width: 640px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.hours-range {
+  display: flex;
+  align-items: center;
   gap: 8px;
+}
+.hours-dash {
+  font-size: 12px;
+  color: var(--muted);
 }
 .settings-field {
   display: flex;
@@ -950,10 +976,15 @@ button.row-title-link:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 16px;
+  margin: 16px auto 0;
+  width: 100%;
+  max-width: 760px;
   padding: 16px;
   background: var(--panel);
   border-radius: 8px;
+}
+.hours-range select {
+  min-width: 0;
 }
 .updates-row {
   display: flex;
