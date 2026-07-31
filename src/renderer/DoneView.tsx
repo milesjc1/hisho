@@ -51,6 +51,9 @@ export default function DoneView({ query }: { query: string }): JSX.Element {
               {sub && <div className="row-sub">{sub}</div>}
               <ExpandableText className="row-desc" snippet={i.snippet} body={i.body} />
             </div>
+            <button className="session-btn" title={i.session_id ? 'Resume Claude session' : 'Start a Claude session'} onClick={() => void api.openSession(i.id)}>
+              {i.session_id ? '↗ Session' : '✦ Session'}
+            </button>
             <button className="restore-btn" onClick={() => void api.restore(i.id)}>
               Restore
             </button>

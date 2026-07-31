@@ -10,10 +10,13 @@ import {
   restore,
   newCount,
   getSetting,
-  setSetting
+  setSetting,
+  getItem,
+  setSessionId
 } from './db'
 import { runPull } from './sync'
 import { rescheduleAutoPull } from './auto-pull'
+import { openSession, DEFAULT_SESSION_DIR } from './session'
 import { checkNow, getStatus, installNow } from './updater'
 import { emitToRenderer, setBadgeCount } from './window'
 import type { ItemState } from '../shared/types'
@@ -66,6 +69,19 @@ export function registerIpc(): void {
     setSetting(key, value)
     // Re-arm the auto-pull timer live when its settings change.
     if (key === 'autoPull' || key === 'autoPullMinutes') rescheduleAutoPull()
+  })
+
+  // ---------- Claude Code session (external terminal) ----------
+  ipcMain.handle('session:open', (_e, id: number) => {
+    const item = getItem(id)
+    if (!item) return { ok: false as const }
+    const dir = getSetting('sessionDir') || DEFAULT_SESSION_DIR
+    const res = openSession(item, dir)
+    if (res.isNew) {
+      setSessionId(id, res.sessionId, item.session_dir ?? dir)
+      touched() // flip the button to "Resume"
+    }
+    return { ok: true as const, ...res }
   })
 
   // ---------- updates ----------

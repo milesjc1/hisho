@@ -71,6 +71,10 @@ export interface Item {
   responded_at: number | null
   /** ISO-8601 timestamp of the underlying message/activity (Slack DM time, etc). */
   source_ts: string | null
+  /** Claude Code session id (UUID) once a session has been started for this item. */
+  session_id: string | null
+  /** Working directory the session runs/resumes in. */
+  session_dir: string | null
   created_at: number
   last_touched_at: number
 }

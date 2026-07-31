@@ -5,7 +5,8 @@ import type { Item } from '../shared/types'
 const item = (o: Partial<Item>): Item => ({
   id: 1, source: 'slack', ext_id: null, kind: null, deep_link: null, app_link: null,
   title: '', sender: null, snippet: null, body: null, state: 'new', status_reason: null,
-  responded_at: null, source_ts: null, created_at: 0, last_touched_at: 0, ...o
+  responded_at: null, source_ts: null, session_id: null, session_dir: null,
+  created_at: 0, last_touched_at: 0, ...o
 })
 
 it('matchesQuery returns true for an empty or whitespace query', () => {

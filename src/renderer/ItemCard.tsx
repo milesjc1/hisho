@@ -22,6 +22,16 @@ export default function ItemCard({ item, variant, staleDays }: Props): JSX.Eleme
   const stale = staleDays != null && days != null && days >= staleDays
   const time = formatItemTime(item.source_ts)
 
+  const sessionBtn = (
+    <button
+      className="session-btn"
+      title={item.session_id ? 'Resume Claude session' : 'Start a Claude session about this item'}
+      onClick={() => void api.openSession(item.id)}
+    >
+      {item.session_id ? '↗ Session' : '✦ Session'}
+    </button>
+  )
+
   // Title opens the source (Slack DM, PR, issue…) when the item has a link.
   const titleEl = link ? (
     <button className="title title-link" title="Open" onClick={() => void api.openLink(link)}>
@@ -50,9 +60,13 @@ export default function ItemCard({ item, variant, staleDays }: Props): JSX.Eleme
         <div className="card-title-row">
           <span className="new-chip">NEW</span>
           {titleEl}
+          {sessionBtn}
         </div>
       ) : (
-        <div className="card-title-row">{titleEl}</div>
+        <div className="card-title-row">
+          {titleEl}
+          {sessionBtn}
+        </div>
       )}
 
       <div className="meta">

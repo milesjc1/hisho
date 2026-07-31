@@ -26,6 +26,7 @@ export function initDbAt(file: string): void {
       source TEXT NOT NULL, ext_id TEXT, kind TEXT,
       deep_link TEXT, app_link TEXT, title TEXT NOT NULL, sender TEXT, snippet TEXT, body TEXT,
       state TEXT NOT NULL DEFAULT 'new', status_reason TEXT, responded_at INTEGER, source_ts TEXT,
+      session_id TEXT, session_dir TEXT,
       created_at INTEGER NOT NULL, last_touched_at INTEGER NOT NULL,
       UNIQUE(source, ext_id)
     );
@@ -46,6 +47,8 @@ function migrate(): void {
   if (!cols.has('responded_at')) db.exec(`ALTER TABLE items ADD COLUMN responded_at INTEGER`)
   if (!cols.has('source_ts')) db.exec(`ALTER TABLE items ADD COLUMN source_ts TEXT`)
   if (!cols.has('body')) db.exec(`ALTER TABLE items ADD COLUMN body TEXT`)
+  if (!cols.has('session_id')) db.exec(`ALTER TABLE items ADD COLUMN session_id TEXT`)
+  if (!cols.has('session_dir')) db.exec(`ALTER TABLE items ADD COLUMN session_dir TEXT`)
   db.exec(`UPDATE items SET state='active' WHERE state='open';`)
   db.exec(`UPDATE items SET state='new' WHERE state='scanned';`)
   if (cols.has('ignore_reason')) {
@@ -122,6 +125,13 @@ export function dismissEntries(entries: DismissEntry[]): number {
   return changed
 }
 
+export function getItem(id: number): Item | undefined {
+  return db.prepare(`SELECT * FROM items WHERE id=?`).get(id) as Item | undefined
+}
+export function setSessionId(id: number, sessionId: string, dir: string): void {
+  db.prepare(`UPDATE items SET session_id=?, session_dir=?, last_touched_at=? WHERE id=?`)
+    .run(sessionId, dir, now(), id)
+}
 export function setState(id: number, state: ItemState): void {
   const respondedAt = state === 'responded' ? now() : null
   db.prepare(`UPDATE items SET state=?, last_touched_at=?,
