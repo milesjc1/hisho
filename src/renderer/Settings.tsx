@@ -7,15 +7,14 @@ interface SettingSpec {
   key: string
   label: string
   default: string
-  type: 'number' | 'select' | 'textarea'
+  type: 'number' | 'select' | 'textarea' | 'hours'
   options?: string[]
   placeholder?: string
 }
 
 const SPECS: SettingSpec[] = [
   { key: 'nagHours', label: 'Nag interval (hours)', default: '3', type: 'number' },
-  { key: 'workStart', label: 'Work start (hour)', default: '9', type: 'number' },
-  { key: 'workEnd', label: 'Work end (hour)', default: '18', type: 'number' },
+  { key: 'workHours', label: 'Work hours', default: '', type: 'hours' },
   { key: 'staleDays', label: 'Stale after (days)', default: '3', type: 'number' },
   {
     key: 'scanModel',
@@ -65,6 +64,15 @@ const SPECS: SettingSpec[] = [
 
 const SCALE_LABELS: Record<string, string> = { s: 'Small', m: 'Medium', l: 'Large' }
 
+/** Work-hours dropdown values (0–23) rendered as "9 AM" / "6 PM". */
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i))
+function hourLabel(h: string): string {
+  const n = Number(h)
+  const ampm = n < 12 ? 'AM' : 'PM'
+  const hr = n % 12 === 0 ? 12 : n % 12
+  return `${hr} ${ampm}`
+}
+
 /** Friendly labels for select options, keyed by setting key (fallback: raw value). */
 const OPTION_LABELS: Record<string, Record<string, string>> = {
   fontScale: SCALE_LABELS,
@@ -111,8 +119,14 @@ export default function Settings(): JSX.Element {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
 
   useEffect(() => {
+    // SPECS keys + the two hour keys the 'workHours' field reads/writes directly.
+    const keys: [string, string][] = [
+      ...SPECS.map((s) => [s.key, s.default] as [string, string]),
+      ['workStart', '9'],
+      ['workEnd', '18']
+    ]
     void Promise.all(
-      SPECS.map((s) => api.getSetting(s.key).then((v) => [s.key, v ?? s.default] as const))
+      keys.map(([k, d]) => api.getSetting(k).then((v) => [k, v ?? d] as const))
     ).then((pairs) => setValues(Object.fromEntries(pairs)))
   }, [])
 
@@ -131,9 +145,10 @@ export default function Settings(): JSX.Element {
 
   return (
     <div className="settings">
-      {SPECS.map((s) => (
-        <div className="settings-field" key={s.key}>
-          <label htmlFor={`set-${s.key}`}>{s.label}</label>
+      <div className="settings-grid">
+        {SPECS.map((s) => (
+          <div className={`settings-field${s.type === 'textarea' ? ' wide' : ''}`} key={s.key}>
+            <label htmlFor={`set-${s.key}`}>{s.label}</label>
           {s.type === 'select' ? (
             <select
               id={`set-${s.key}`}
@@ -155,6 +170,20 @@ export default function Settings(): JSX.Element {
               value={values[s.key] ?? s.default}
               onChange={(e) => update(s.key, e.target.value)}
             />
+          ) : s.type === 'hours' ? (
+            <div className="hours-range">
+              <select value={values['workStart'] ?? '9'} onChange={(e) => update('workStart', e.target.value)}>
+                {HOURS.map((h) => (
+                  <option key={h} value={h}>{hourLabel(h)}</option>
+                ))}
+              </select>
+              <span className="hours-dash">to</span>
+              <select value={values['workEnd'] ?? '18'} onChange={(e) => update('workEnd', e.target.value)}>
+                {HOURS.map((h) => (
+                  <option key={h} value={h}>{hourLabel(h)}</option>
+                ))}
+              </select>
+            </div>
           ) : (
             <input
               id={`set-${s.key}`}
@@ -163,8 +192,9 @@ export default function Settings(): JSX.Element {
               onChange={(e) => update(s.key, e.target.value)}
             />
           )}
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
 
       <div className="updates">
         <div className="updates-row">

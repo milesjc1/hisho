@@ -39,7 +39,7 @@ interface SlackMatch {
 /** Item title: who the message is from. `username` is the display handle (human
  * or app, e.g. "kris.johnson", "linear"); fall back to the raw user id. */
 export function slackTitle(match: Pick<SlackMatch, 'username' | 'user'>): string {
-  return `Message from ${match.username ?? match.user ?? 'someone'}`
+  return match.username ?? match.user ?? 'someone'
 }
 
 /** Native deep link that opens the Slack desktop app straight to the exact

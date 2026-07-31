@@ -4,7 +4,7 @@ import DoneView from './DoneView'
 import DismissedView from './DismissedView'
 import Settings from './Settings'
 import PullLog from './PullLog'
-import Sidebar, { type View } from './Sidebar'
+import Header, { type View } from './Header'
 import { ZOOM_FACTORS, type FontScale } from '../shared/types'
 
 const api = window.hisho
@@ -54,7 +54,7 @@ export default function App(): JSX.Element {
 
   return (
     <div className="app">
-      <Sidebar
+      <Header
         view={view}
         onNavigate={setView}
         mode={mode}
@@ -63,26 +63,11 @@ export default function App(): JSX.Element {
         scanning={scanning}
         onPull={() => void pull()}
         pullError={pullError}
+        query={query}
+        setQuery={setQuery}
       />
 
-      <div className="main">
-        {view !== 'settings' && (
-          <div className="search-bar">
-            <input
-              className="search-input"
-              type="text"
-              placeholder="Search your plate…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            {query && (
-              <button className="search-clear" title="Clear" onClick={() => setQuery('')}>
-                ×
-              </button>
-            )}
-          </div>
-        )}
-
+      <div className="content">
         {view === 'board' && <Board query={query} />}
         {view === 'done' && <DoneView query={query} />}
         {view === 'dismissed' && <DismissedView query={query} />}

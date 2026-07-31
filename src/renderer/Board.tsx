@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Item } from '../shared/types'
+import type { KeyboardEvent } from 'react'
 import Panel from './Panel'
 import ItemCard from './ItemCard'
 import { matchesQuery } from './lib'
@@ -29,6 +30,17 @@ export default function Board({ query }: { query: string }): JSX.Element {
   const [back, setBack] = useState<Item[]>([])
   const [resp, setResp] = useState<Item[]>([])
   const [staleDays, setStaleDays] = useState(3)
+  const [addTitle, setAddTitle] = useState('')
+
+  const submitAdd = async (): Promise<void> => {
+    const t = addTitle.trim()
+    if (!t) return
+    await api.addManual(t)
+    setAddTitle('')
+  }
+  const onAddKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter') void submitAdd()
+  }
 
   const load = (): void => {
     void Promise.all([api.center(), api.backburner(), api.responded()]).then(([c, b, r]) => {
@@ -61,7 +73,26 @@ export default function Board({ query }: { query: string }): JSX.Element {
         ))}
       </Panel>
 
-      <Panel title="Active" count={fCenter.length} state="active" icon={<IconActive />} accent>
+      <Panel
+        title="Active"
+        count={fCenter.length}
+        state="active"
+        icon={<IconActive />}
+        accent
+        action={
+          <span className="add-inline">
+            <input
+              className="add-inline-input"
+              type="text"
+              placeholder="Add task…"
+              value={addTitle}
+              onChange={(e) => setAddTitle(e.target.value)}
+              onKeyDown={onAddKeyDown}
+            />
+            <button className="add-inline-go" onClick={() => void submitAdd()}>Add</button>
+          </span>
+        }
+      >
         {newItems.length > 0 && (
           <div className="section-label">
             Needs triage
