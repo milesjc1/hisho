@@ -102,8 +102,36 @@ export function slackAfterDate(sinceMs: number): string {
   return new Date(sinceMs - 86_400_000).toISOString().slice(0, 10) // YYYY-MM-DD, day before
 }
 
+/** Parse the watch-channels setting (one per line): strip a leading #, lowercase,
+ * trim, drop blanks, dedupe. Names feed `search.messages` `in:#<name>` queries. */
+export function parseWatchChannels(text: string): string[] {
+  const seen = new Set<string>()
+  for (const raw of (text ?? '').split(/\r?\n/)) {
+    const c = raw.trim().replace(/^#/, '').trim().toLowerCase()
+    if (c) seen.add(c)
+  }
+  return [...seen]
+}
+
 /** Hard cap on pages fetched (100/page) so a busy window can't hang the pull. */
 const MAX_PAGES = 20
+
+/** Run one search.messages query across all its pages (capped by MAX_PAGES). */
+async function searchAllPages(token: string, query: string): Promise<SlackMatch[]> {
+  const matches: SlackMatch[] = []
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const search = (await slack('search.messages', token, {
+      query,
+      count: '100',
+      page: String(page),
+      sort: 'timestamp',
+      sort_dir: 'desc'
+    })) as { messages?: { matches?: SlackMatch[]; paging?: { pages?: number } } }
+    matches.push(...(search.messages?.matches ?? []))
+    if (page >= (search.messages?.paging?.pages ?? 1)) break
+  }
+  return matches
+}
 
 /**
  * The full dump of messages directed at me in the window, via search.messages
@@ -114,24 +142,22 @@ const MAX_PAGES = 20
  *
  * `sinceMs` is the exact cutoff: the query uses its day-floor (Slack's `after:` is
  * date-only), then matches older than `sinceMs` are dropped for true "since <instant>".
+ *
+ * `channels` are watched channel names — each adds an `in:#<name>` query so ALL of a
+ * channel's messages enter the pool (not just ones that @mention me). Results from
+ * every query merge into one dedup'd build loop below.
  */
-export async function collectSlack(sinceMs: number, token: string): Promise<Candidate[]> {
+export async function collectSlack(
+  sinceMs: number,
+  token: string,
+  channels: string[] = []
+): Promise<Candidate[]> {
   const me = (await slack('auth.test', token, {})) as { user_id: string; team_id?: string }
   const after = slackAfterDate(sinceMs)
 
+  const queries = [`to:me after:${after}`, ...channels.map((c) => `in:#${c} after:${after}`)]
   const matches: SlackMatch[] = []
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const search = (await slack('search.messages', token, {
-      query: `to:me after:${after}`,
-      count: '100',
-      page: String(page),
-      sort: 'timestamp',
-      sort_dir: 'desc'
-    })) as { messages?: { matches?: SlackMatch[]; paging?: { pages?: number } } }
-
-    matches.push(...(search.messages?.matches ?? []))
-    if (page >= (search.messages?.paging?.pages ?? 1)) break
-  }
+  for (const q of queries) matches.push(...(await searchAllPages(token, q)))
 
   const out: Candidate[] = []
   const seen = new Set<string>()

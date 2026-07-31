@@ -53,6 +53,13 @@ const SPECS: SettingSpec[] = [
     default: '',
     type: 'textarea',
     placeholder: '#deploys\n@reminders-bot\nstandup'
+  },
+  {
+    key: 'watchChannels',
+    label: 'Watch channels (one per line — pulls all messages, not just @mentions)',
+    default: '',
+    type: 'textarea',
+    placeholder: '#planning\n#engineering'
   }
 ]
 
