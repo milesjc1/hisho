@@ -7,7 +7,7 @@ interface SettingSpec {
   key: string
   label: string
   default: string
-  type: 'number' | 'select' | 'textarea' | 'hours'
+  type: 'number' | 'select' | 'textarea' | 'hours' | 'text'
   options?: string[]
   placeholder?: string
 }
@@ -59,6 +59,12 @@ const SPECS: SettingSpec[] = [
     default: '',
     type: 'textarea',
     placeholder: '#planning\n#engineering'
+  },
+  {
+    key: 'sessionDir',
+    label: 'Claude session folder',
+    default: 'C:\\Users\\MilesChristensen\\Desktop\\claude-projects',
+    type: 'text'
   }
 ]
 
@@ -147,7 +153,7 @@ export default function Settings(): JSX.Element {
     <div className="settings">
       <div className="settings-grid">
         {SPECS.map((s) => (
-          <div className={`settings-field${s.type === 'textarea' ? ' wide' : ''}`} key={s.key}>
+          <div className={`settings-field${s.type === 'textarea' || s.type === 'text' ? ' wide' : ''}`} key={s.key}>
             <label htmlFor={`set-${s.key}`}>{s.label}</label>
           {s.type === 'select' ? (
             <select
@@ -184,6 +190,14 @@ export default function Settings(): JSX.Element {
                 ))}
               </select>
             </div>
+          ) : s.type === 'text' ? (
+            <input
+              id={`set-${s.key}`}
+              type="text"
+              className="settings-text"
+              value={values[s.key] ?? s.default}
+              onChange={(e) => update(s.key, e.target.value)}
+            />
           ) : (
             <input
               id={`set-${s.key}`}

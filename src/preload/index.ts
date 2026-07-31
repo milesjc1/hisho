@@ -13,6 +13,8 @@ const api = {
   addManual: (title: string): Promise<number> => ipcRenderer.invoke('item:addManual', title),
   restore: (id: number): Promise<void> => ipcRenderer.invoke('item:restore', id),
   openLink: (url: string): Promise<void> => ipcRenderer.invoke('shell:open', url),
+  openSession: (id: number): Promise<{ ok: boolean; sessionId?: string; isNew?: boolean }> =>
+    ipcRenderer.invoke('session:open', id),
   pull: (mode: string): Promise<{ ok: boolean; error?: string }> =>
     ipcRenderer.invoke('pull:run', mode),
   getSetting: (k: string): Promise<string | null> => ipcRenderer.invoke('settings:get', k),
