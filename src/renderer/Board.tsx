@@ -30,7 +30,6 @@ export default function Board({ query }: { query: string }): JSX.Element {
   const [back, setBack] = useState<Item[]>([])
   const [resp, setResp] = useState<Item[]>([])
   const [staleDays, setStaleDays] = useState(3)
-  const [showAdd, setShowAdd] = useState(false)
   const [addTitle, setAddTitle] = useState('')
 
   const submitAdd = async (): Promise<void> => {
@@ -38,11 +37,9 @@ export default function Board({ query }: { query: string }): JSX.Element {
     if (!t) return
     await api.addManual(t)
     setAddTitle('')
-    setShowAdd(false)
   }
   const onAddKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter') void submitAdd()
-    if (e.key === 'Escape') setShowAdd(false)
   }
 
   const load = (): void => {
@@ -83,28 +80,19 @@ export default function Board({ query }: { query: string }): JSX.Element {
         icon={<IconActive />}
         accent
         action={
-          <button className="add-task-btn" title="Add task" onClick={() => setShowAdd((v) => !v)}>
-            + Add
-          </button>
-        }
-      >
-        {showAdd && (
-          <div className="add-form">
+          <span className="add-inline">
             <input
-              className="add-input"
+              className="add-inline-input"
               type="text"
-              placeholder="Task title…"
+              placeholder="Add task…"
               value={addTitle}
               onChange={(e) => setAddTitle(e.target.value)}
               onKeyDown={onAddKeyDown}
-              autoFocus
             />
-            <div className="add-row">
-              <button className="add-submit" onClick={() => void submitAdd()}>Add</button>
-              <button className="add-cancel" onClick={() => setShowAdd(false)}>✕</button>
-            </div>
-          </div>
-        )}
+            <button className="add-inline-go" onClick={() => void submitAdd()}>Add</button>
+          </span>
+        }
+      >
         {newItems.length > 0 && (
           <div className="section-label">
             Needs triage

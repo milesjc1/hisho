@@ -19,13 +19,6 @@ interface Props {
   setQuery: (q: string) => void
 }
 
-const WINDOW_OPTIONS = [
-  { v: 'since', label: 'Since last pull' },
-  { v: '1', label: 'Last 1 day' },
-  { v: '7', label: 'Last 7 days' },
-  { v: '30', label: 'Last 30 days' }
-]
-
 const IconGrid = (): JSX.Element => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
@@ -73,6 +66,14 @@ export default function Header({
     setMenuOpen(false)
   }
   const currentLabel = NAV.find((n) => n.id === view)?.label ?? 'Board'
+
+  // "Since" carries the actual last-pull timestamp so it doesn't need a second line.
+  const windowOptions = [
+    { v: 'since', label: lastPullAt ? `Since ${formatStamp(lastPullAt)}` : 'Since last pull' },
+    { v: '1', label: 'Last 1 day' },
+    { v: '7', label: 'Last 7 days' },
+    { v: '30', label: 'Last 30 days' }
+  ]
 
   return (
     <header className="header">
@@ -123,24 +124,18 @@ export default function Header({
       </div>
 
       <div className="header-right">
-        <div className="pull-controls">
-          <select className="scan-select" value={mode} onChange={(e) => onChangeMode(e.target.value)}>
-            {WINDOW_OPTIONS.map((o) => (
-              <option key={o.v} value={o.v}>{o.label}</option>
-            ))}
-          </select>
-          <button className="pull-btn" onClick={onPull} disabled={scanning}>
-            <svg className={scanning ? 'spinning' : ''} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
-            </svg>
-            {scanning ? 'Scanning…' : 'Pull'}
-          </button>
-        </div>
-        <span className="pull-hint">
-          {pullError ? <span className="pull-error">{pullError}</span>
-            : mode === 'since' ? (lastPullAt ? `Since ${formatStamp(lastPullAt)}` : 'First pull — full window')
-            : null}
-        </span>
+        <select className="scan-select" value={mode} onChange={(e) => onChangeMode(e.target.value)}>
+          {windowOptions.map((o) => (
+            <option key={o.v} value={o.v}>{o.label}</option>
+          ))}
+        </select>
+        <button className="pull-btn" onClick={onPull} disabled={scanning}>
+          <svg className={scanning ? 'spinning' : ''} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15-6.7L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+          {scanning ? 'Scanning…' : 'Pull'}
+        </button>
+        {pullError && <span className="pull-error header-pull-error">{pullError}</span>}
       </div>
     </header>
   )
