@@ -1,5 +1,5 @@
 import { it, expect } from 'vitest'
-import { sessionName, buildSeed, buildSessionArgs } from './session-args'
+import { sessionName, buildContext, buildSessionArgs } from './session-args'
 import type { Item } from '../shared/types'
 
 const item = (o: Partial<Item>): Item => ({
@@ -14,25 +14,26 @@ it('sessionName combines sender and kind, truncated', () => {
   expect(sessionName(item({ sender: null, kind: null, source: 'linear' }))).toBe('linear')
 })
 
-it('buildSeed is a single line with the item context and a help instruction', () => {
-  const seed = buildSeed(item({
+it('buildContext is a single-line context blurb (not an instruction to act)', () => {
+  const ctx = buildContext(item({
     source: 'slack', kind: '#planning', sender: 'ian.beal',
     title: 'planning meeting', deep_link: 'https://x/p1', body: 'line one\nline two'
   }))
-  expect(seed).not.toContain('\n')
-  expect(seed.toLowerCase()).toContain('help')
-  expect(seed).toContain('From: ian.beal')
-  expect(seed).toContain('Title: planning meeting')
-  expect(seed).toContain('Link: https://x/p1')
-  expect(seed).toContain('line one line two') // newlines collapsed
+  expect(ctx).not.toContain('\n')
+  expect(ctx.toLowerCase()).toContain('plate') // frames it as a Hisho item
+  expect(ctx.toLowerCase()).toContain('wait') // don't act until asked
+  expect(ctx).toContain('From: ian.beal')
+  expect(ctx).toContain('Title: planning meeting')
+  expect(ctx).toContain('Link: https://x/p1')
+  expect(ctx).toContain('line one line two')
 })
 
-it('buildSessionArgs resumes with just --resume <id>', () => {
-  expect(buildSessionArgs({ sessionId: 'u1', name: 'n', seed: 's', resume: true }))
-    .toEqual(['--resume', 'u1'])
+it('buildSessionArgs injects context via --append-system-prompt, no user message', () => {
+  expect(buildSessionArgs({ sessionId: 'u1', name: 'n', context: 'ctx', resume: false }))
+    .toEqual(['--session-id', 'u1', '-n', 'n', '--append-system-prompt', 'ctx'])
 })
 
-it('buildSessionArgs starts a new session with id, name, and seed', () => {
-  expect(buildSessionArgs({ sessionId: 'u1', name: 'ian · #planning', seed: 'help me', resume: false }))
-    .toEqual(['--session-id', 'u1', '-n', 'ian · #planning', 'help me'])
+it('buildSessionArgs resumes and re-injects the context (system prompt is per-invocation)', () => {
+  expect(buildSessionArgs({ sessionId: 'u1', name: 'n', context: 'ctx', resume: true }))
+    .toEqual(['--resume', 'u1', '--append-system-prompt', 'ctx'])
 })

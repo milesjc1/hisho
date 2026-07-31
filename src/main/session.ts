@@ -4,7 +4,7 @@ import { writeFileSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import type { Item } from '../shared/types'
-import { sessionName, buildSeed, buildSessionArgs } from './session-args'
+import { sessionName, buildContext, buildSessionArgs } from './session-args'
 
 const CLAUDE = 'C:\\Users\\MilesChristensen\\.local\\bin\\claude.exe'
 export const DEFAULT_SESSION_DIR = 'C:\\Users\\MilesChristensen\\Desktop\\claude-projects'
@@ -25,7 +25,7 @@ export function openSession(item: Item, defaultDir: string): { sessionId: string
   const resume = !!item.session_id
   const sessionId = item.session_id ?? randomUUID()
   const dir = item.session_dir ?? defaultDir
-  const args = buildSessionArgs({ sessionId, name: sessionName(item), seed: buildSeed(item), resume })
+  const args = buildSessionArgs({ sessionId, name: sessionName(item), context: buildContext(item), resume })
 
   // A tiny batch encapsulates the quoting: cd into the dir, run claude with args,
   // and `cmd /k` keeps the window open after the session ends.
