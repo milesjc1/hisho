@@ -1,5 +1,14 @@
 import { it, expect } from 'vitest'
-import { blockText, slackTitle, slackDescriptor, slackAppLink, slackAfterDate } from './slack'
+import { blockText, slackTitle, slackDescriptor, slackAppLink, slackAfterDate, parseWatchChannels } from './slack'
+
+it('parseWatchChannels strips #, lowercases, trims, drops blanks and dedupes', () => {
+  expect(parseWatchChannels('#Planning\n planning \n\n#Eng-Team\n')).toEqual(['planning', 'eng-team'])
+})
+
+it('parseWatchChannels returns [] for empty/blank input', () => {
+  expect(parseWatchChannels('')).toEqual([])
+  expect(parseWatchChannels('  \n \n')).toEqual([])
+})
 
 it('slackAfterDate returns the day before the cutoff (UTC) so Slack exclusive after: includes today', () => {
   expect(slackAfterDate(Date.parse('2026-07-30T12:34:56.000Z'))).toBe('2026-07-29')

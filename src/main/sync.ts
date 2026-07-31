@@ -1,7 +1,7 @@
 import { emitToRenderer, setBadgeCount, showAndFocus } from './window'
 import { notify } from './notify'
 import { ingest, dismissEntries, newCount, getSetting, setSetting } from './db'
-import { collectAll, candidateToIngest } from './collect'
+import { collectAll, candidateToIngest, parseWatchChannels } from './collect'
 import { filterIgnored } from './collect/ignore'
 import { resolvePullSince } from './pull-window'
 import { triage } from './triage'
@@ -41,7 +41,9 @@ export async function runPull(
     const firstRunDays = Number(getSetting('scanDays')) || 7
     const since = resolvePullSince(mode, lastPullAt, startedAt, firstRunDays)
     line(`pulling since ${new Date(since).toLocaleString()}${mode === 'since' ? '' : ` (last ${mode}d)`}`)
-    const { candidates, results } = await collectAll(since)
+    const channels = parseWatchChannels(getSetting('watchChannels') || '')
+    if (channels.length) line(`watching ${channels.length} channel(s): ${channels.map((c) => `#${c}`).join(', ')}`)
+    const { candidates, results } = await collectAll(since, channels)
     for (const r of results) {
       if (r.error) line(`${r.source}: ${r.candidates.length} found (note: ${r.error})`)
       else line(`${r.source}: ${r.candidates.length} found`)

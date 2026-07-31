@@ -4,6 +4,7 @@ import { loadSecrets } from './secrets'
 import { collectSlack } from './slack'
 
 export type { Candidate, SourceResult } from './types'
+export { parseWatchChannels } from './slack'
 
 /** Candidate → the row shape ingest() expects (author → sender; drop triage-only fields). */
 export function candidateToIngest(c: Candidate): IngestItem {
@@ -33,11 +34,11 @@ export interface CollectResult {
  * (Teams/Outlook/GitHub/Linear) reach the feed via the plate-write CLI, not
  * this in-app pull.
  */
-export async function collectAll(sinceMs: number): Promise<CollectResult> {
+export async function collectAll(sinceMs: number, channels: string[] = []): Promise<CollectResult> {
   const s = loadSecrets()
 
   const result = s.slackUserToken
-    ? await wrap('slack', () => collectSlack(sinceMs, s.slackUserToken!))
+    ? await wrap('slack', () => collectSlack(sinceMs, s.slackUserToken!, channels))
     : { source: 'slack' as const, candidates: [], error: 'no slackUserToken' }
 
   return { candidates: result.candidates, results: [result] }
