@@ -63,6 +63,22 @@ function migrate(): void {
 
 const now = (): number => Date.now()
 
+/**
+ * Collapse Slack external_id variants to one stable dedup key. Slack candidates have
+ * historically been formatted three ways by different producers — bare `<ts>`, the in-app
+ * pull's `<channelId>:<ts>`, and older CLI runs' `<channelId>-<ts>` — which defeated the
+ * (source, ext_id) UNIQUE and surfaced the same message multiple times. The Slack message
+ * `ts` (e.g. `1785168351.481429`) is itself the stable, unique id, so normalize every
+ * variant down to it. Non-Slack ids are opaque and left untouched.
+ */
+export function normalizeExtId(source: string, extId: string): string {
+  if (source === 'slack') {
+    const m = extId.match(/\d{6,}\.\d+/)
+    if (m) return m[0]
+  }
+  return extId
+}
+
 // ---- reads ----
 export function listCenter(): Item[] {
   return db.prepare(`SELECT * FROM items WHERE state IN ('new','active')
@@ -102,7 +118,7 @@ export function ingest(items: IngestItem[]): number {
     for (const r of rows) {
       if (!r || typeof r.source !== 'string' || typeof r.external_id !== 'string' || !r.title?.trim()) continue
       const info = stmt.run({
-        source: r.source, ext_id: r.external_id, kind: r.kind ?? null,
+        source: r.source, ext_id: normalizeExtId(r.source, r.external_id), kind: r.kind ?? null,
         deep_link: r.deep_link ?? null, app_link: r.app_link ?? null,
         title: r.title, sender: r.sender ?? null, snippet: r.snippet ?? null,
         body: r.body ?? null, source_ts: r.source_ts ?? null, ts: now()
@@ -119,7 +135,7 @@ export function dismissEntries(entries: DismissEntry[]): number {
     WHERE source=@source AND ext_id=@ext_id AND state IN ('new','active','backburner','responded')`)
   let changed = 0
   const tx = db.transaction((rows: DismissEntry[]) => {
-    for (const e of rows) changed += stmt.run({ source: e.source, ext_id: e.external_id, reason: e.reason, ts: now() }).changes
+    for (const e of rows) changed += stmt.run({ source: e.source, ext_id: normalizeExtId(e.source, e.external_id), reason: e.reason, ts: now() }).changes
   })
   tx(entries)
   return changed

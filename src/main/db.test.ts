@@ -26,6 +26,28 @@ it('ingest inserts new rows and dedups on (source, ext_id)', async () => {
   expect(db.ingest([{ source: 'slack', external_id: 'a', title: 'Hi again' }])).toBe(0)
 })
 
+it('dedups slack across channel-prefix and separator variants (normalizes on ts)', async () => {
+  const db = await fresh()
+  const ts = '1785168351.481429'
+  expect(db.ingest([{ source: 'slack', external_id: ts, title: 'bare' }])).toBe(1)
+  expect(db.ingest([{ source: 'slack', external_id: `D0AJPGNB8GY-${ts}`, title: 'dash' }])).toBe(0)
+  expect(db.ingest([{ source: 'slack', external_id: `D0AJPGNB8GY:${ts}`, title: 'colon' }])).toBe(0)
+  expect(db.listCenter().length).toBe(1)
+})
+
+it('dismiss matches a slack row regardless of ext_id variant', async () => {
+  const db = await fresh()
+  const ts = '1785168351.481429'
+  db.ingest([{ source: 'slack', external_id: `D0AJPGNB8GY:${ts}`, title: 'colon' }])
+  expect(db.dismissEntries([{ source: 'slack', external_id: ts, reason: 'dup' }])).toBe(1)
+})
+
+it('does not normalize non-slack ext_ids (distinct ids stay distinct)', async () => {
+  const db = await fresh()
+  expect(db.ingest([{ source: 'teams', external_id: 'D0AJPGNB8GY-1785168351.481429', title: 'a' }])).toBe(1)
+  expect(db.ingest([{ source: 'teams', external_id: '1785168351.481429', title: 'b' }])).toBe(1)
+})
+
 it('setState active->responded stamps responded_at; ->other clears it', async () => {
   const db = await fresh()
   db.ingest([{ source: 'slack', external_id: 'a', title: 'Hi' }])
