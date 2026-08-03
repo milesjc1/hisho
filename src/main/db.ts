@@ -51,6 +51,7 @@ function migrate(): void {
   if (!cols.has('session_dir')) db.exec(`ALTER TABLE items ADD COLUMN session_dir TEXT`)
   db.exec(`UPDATE items SET state='active' WHERE state='open';`)
   db.exec(`UPDATE items SET state='new' WHERE state='scanned';`)
+  normalizeSlackExtIds()
   if (cols.has('ignore_reason')) {
     db.exec(`UPDATE items SET state='dismissed',
                status_reason=COALESCE(status_reason, ignore_reason, '(legacy ignored)')
@@ -77,6 +78,59 @@ export function normalizeExtId(source: string, extId: string): string {
     if (m) return m[0]
   }
   return extId
+}
+
+/**
+ * One-time repair of Slack rows stored before normalizeExtId() existed: their ext_ids
+ * carried a channel prefix (`<channelId>:<ts>` / `<channelId>-<ts>`), so a re-pull — which
+ * now writes the bare `<ts>` — would miss the (source, ext_id) match and re-insert a "new"
+ * duplicate of an item already dismissed. Collapse every variant of a `ts` to one row:
+ * keep the most recently touched (so a dismiss/done the user made wins over a stale copy),
+ * rewrite its ext_id to the bare ts, drop the rest. Idempotent — a second run is a no-op.
+ */
+function normalizeSlackExtIds(): void {
+  const rows = db.prepare(
+    `SELECT id, ext_id, last_touched_at AS last FROM items WHERE source='slack' AND ext_id IS NOT NULL`
+  ).all() as { id: number; ext_id: string; last: number }[]
+
+  const groups = new Map<string, typeof rows>()
+  for (const r of rows) {
+    const norm = normalizeExtId('slack', r.ext_id)
+    const g = groups.get(norm)
+    if (g) g.push(r)
+    else groups.set(norm, [r])
+  }
+
+  const upd = db.prepare(`UPDATE items SET ext_id=? WHERE id=?`)
+  const del = db.prepare(`DELETE FROM items WHERE id=?`)
+  const tx = db.transaction(() => {
+    for (const [norm, g] of groups) {
+      if (g.length === 1 && g[0].ext_id === norm) continue // already a lone bare-ts row — nothing to do
+      g.sort((a, b) => b.last - a.last || a.id - b.id) // most recently touched wins, tie: lowest id
+      const keep = g[0]
+      for (const r of g) if (r.id !== keep.id) del.run(r.id) // delete dups first — frees the UNIQUE(source,ext_id) slot
+      if (keep.ext_id !== norm) upd.run(norm, keep.id)
+    }
+  })
+  tx()
+}
+
+/**
+ * Split candidates into those already stored (any state, matched by normalized key) and
+ * genuinely new ones — so the sync loop can skip re-triaging (and re-paying the LLM for)
+ * items already on the plate. ingest() still dedups as a backstop.
+ */
+export function filterKnown<T extends { source: string; external_id: string }>(
+  items: T[]
+): { fresh: T[]; known: T[] } {
+  const hit = db.prepare(`SELECT 1 FROM items WHERE source=? AND ext_id=? LIMIT 1`)
+  const fresh: T[] = []
+  const known: T[] = []
+  for (const it of items) {
+    if (hit.get(it.source, normalizeExtId(it.source, it.external_id))) known.push(it)
+    else fresh.push(it)
+  }
+  return { fresh, known }
 }
 
 // ---- reads ----

@@ -1,6 +1,6 @@
 import { emitToRenderer, setBadgeCount, showAndFocus } from './window'
 import { notify } from './notify'
-import { ingest, dismissEntries, newCount, getSetting, setSetting } from './db'
+import { ingest, dismissEntries, newCount, getSetting, setSetting, filterKnown } from './db'
 import { collectAll, candidateToIngest, parseWatchChannels } from './collect'
 import { filterIgnored } from './collect/ignore'
 import { resolvePullSince } from './pull-window'
@@ -55,13 +55,19 @@ export async function runPull(
     const { kept, ignored } = filterIgnored(candidates, getSetting('ignoreList') || '')
     if (ignored.length) line(`${ignored.length} ignored by your rules`)
 
+    // 1c. Drop anything already on the plate BEFORE triage — no point paying the LLM to
+    // re-classify items ingest() would dedup away anyway. Matches on the normalized key,
+    // so a re-pull of already-seen (incl. dismissed) items skips the model entirely.
+    const { fresh, known } = filterKnown(kept)
+    if (known.length) line(`${known.length} already on your plate, skipping triage`)
+
     // 2. Triage (LLM's only job — pure classification). This is the slow step —
     // log before and after so the pull log isn't silent while the model thinks.
     // The user's natural-language rules (setting) are appended to the prompt.
     const model = getSetting('scanModel') || 'sonnet'
     const userRules = getSetting('triageRules') || ''
-    line(`triaging ${kept.length} with ${model}…`)
-    const { keep, dismiss } = await triage(kept, model, userRules)
+    line(`triaging ${fresh.length} with ${model}…`)
+    const { keep, dismiss } = await triage(fresh, model, userRules)
     line(`triage: ${keep.length} kept, ${dismiss.length} flagged as noise`)
 
     // 3. Write (app writes; dedup handled by ingest()).

@@ -48,6 +48,36 @@ it('does not normalize non-slack ext_ids (distinct ids stay distinct)', async ()
   expect(db.ingest([{ source: 'teams', external_id: '1785168351.481429', title: 'b' }])).toBe(1)
 })
 
+it('filterKnown splits candidates already stored (by normalized key) from fresh', async () => {
+  const db = await fresh()
+  db.ingest([{ source: 'slack', external_id: 'D0AJPGNB8GY:1785168351.481429', title: 'x' }])
+  const { fresh: fr, known } = db.filterKnown([
+    { source: 'slack', external_id: 'C9OTHER:1785168351.481429' }, // same ts, other channel → known
+    { source: 'slack', external_id: '1785168351.999999' },          // different ts → fresh
+    { source: 'teams', external_id: 'abc' }                         // different source → fresh
+  ])
+  expect(known.map(k => k.external_id)).toEqual(['C9OTHER:1785168351.481429'])
+  expect(fr.length).toBe(2)
+})
+
+it('migration collapses legacy slack ext_id variants to bare ts, keeping most-recent row', async () => {
+  const raw = new Database(process.env.PLATE_DB!)
+  raw.exec(`CREATE TABLE items (id INTEGER PRIMARY KEY AUTOINCREMENT, source TEXT NOT NULL,
+    ext_id TEXT, title TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'new',
+    created_at INTEGER NOT NULL, last_touched_at INTEGER NOT NULL, UNIQUE(source, ext_id));`)
+  const ins = raw.prepare(`INSERT INTO items (source,ext_id,title,state,created_at,last_touched_at) VALUES (?,?,?,?,?,?)`)
+  const ts = '1785168351.481429'
+  ins.run('slack', `D0AJPGNB8GY:${ts}`, 'colon', 'dismissed', 1, 100) // most recently touched
+  ins.run('slack', ts, 'bare', 'new', 2, 50)
+  ins.run('slack', `C1-${ts}`, 'dash', 'new', 3, 10)
+  raw.close()
+  const db = await fresh()
+  const slackDismissed = db.listDismissed().filter(i => i.source === 'slack')
+  expect(db.listCenter().filter(i => i.source === 'slack').length).toBe(0) // no 'new' survivors
+  expect(slackDismissed.length).toBe(1)                                    // three rows → one
+  expect(slackDismissed[0].ext_id).toBe(ts)                               // normalized to bare ts
+})
+
 it('setState active->responded stamps responded_at; ->other clears it', async () => {
   const db = await fresh()
   db.ingest([{ source: 'slack', external_id: 'a', title: 'Hi' }])
